@@ -1,0 +1,33 @@
+# Python cache and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Local build outputs (keep the packaged tool EXE and download ZIP)
+build/
+dist/
+*.spec
+
+# Personal configuration, credentials and installer state
+.env
+.env.*
+!.env.example
+.codex/
+config.toml
+auth.json
+credentials.json
+managed-prompts/
+install-state.json
+install.lock
+*.bak
+*.log
+
+# OS and editor metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
