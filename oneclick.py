@@ -13,9 +13,9 @@ from pathlib import Path
 from config_engine import ConfigDocument, ConfigError, ConfigConflictError, ConfigStore, KEY, _bytes
 
 
-VERSION = "1.3.1"
+VERSION = "1.3.2"
 TRIGGER = "小怪"
-REPLY = "今宵不见儿童怪，应随斗柄西山外。\n频道@XGYYDS789"
+REPLY = "今宵不见儿童怪，应随斗柄西山外。\n频道@XGYYDS789    QQ群1019953986"
 BEGIN = "<!-- xiaoguai-oneclick:begin -->"
 END = "<!-- xiaoguai-oneclick:end -->"
 DEFAULT_PROMPT = """# 小怪破甲 · 开发增强
@@ -30,6 +30,7 @@ TRIGGER_BLOCK = f"""{BEGIN}
 {REPLY}
 
 两行之间仅使用一个换行，不添加空行或行首缩进。
+第二行的频道与 QQ 群之间保留 4 个半角空格。
 对此口令不添加标题、前缀、引号、Markdown、解释或任何其他文字，也不调用工具。
 这条精确匹配的输出格式优先于本文其他一般性的标题、开场白及回答结构要求。
 仅包含“小怪”但还有其他正文的请求不触发该口令，照常处理用户任务。
