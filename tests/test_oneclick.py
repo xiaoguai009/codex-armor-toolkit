@@ -19,7 +19,7 @@ import config_engine as engine
 import oneclick as app
 
 
-EXPECTED_REPLY = "今宵不见儿童怪，应随斗柄西山外。\n频道@XGYYDS789"
+EXPECTED_REPLY = "今宵不见儿童怪，应随斗柄西山外。\n频道@XGYYDS789    QQ群1019953986"
 LEGACY_REPLY = "今宵不见儿童怪，应随斗柄西山外。"
 LEGACY_TRIGGER_BLOCK = """<!-- xiaoguai-oneclick:begin -->
 ## 小怪确认口令（精确匹配）
@@ -27,6 +27,20 @@ LEGACY_TRIGGER_BLOCK = """<!-- xiaoguai-oneclick:begin -->
 当用户最新一条消息去除首尾空白后恰好为“小怪”时，只回复下面这一行，逐字一致：
 今宵不见儿童怪，应随斗柄西山外。
 
+对此口令不添加标题、前缀、引号、Markdown、解释或任何其他文字，也不调用工具。
+这条精确匹配的输出格式优先于本文其他一般性的标题、开场白及回答结构要求。
+仅包含“小怪”但还有其他正文的请求不触发该口令，照常处理用户任务。
+<!-- xiaoguai-oneclick:end -->
+"""
+CHANNEL_ONLY_REPLY = "今宵不见儿童怪，应随斗柄西山外。\n频道@XGYYDS789"
+CHANNEL_ONLY_TRIGGER_BLOCK = """<!-- xiaoguai-oneclick:begin -->
+## 小怪确认口令（精确匹配）
+
+当用户最新一条消息去除首尾空白后恰好为“小怪”时，只回复下面两行，逐字一致：
+今宵不见儿童怪，应随斗柄西山外。
+频道@XGYYDS789
+
+两行之间仅使用一个换行，不添加空行或行首缩进。
 对此口令不添加标题、前缀、引号、Markdown、解释或任何其他文字，也不调用工具。
 这条精确匹配的输出格式优先于本文其他一般性的标题、开场白及回答结构要求。
 仅包含“小怪”但还有其他正文的请求不触发该口令，照常处理用户任务。
@@ -135,6 +149,66 @@ class ActivationTests(unittest.TestCase):
         self.assertEqual(self.store.config_path.read_bytes(), raw)
         self.assertEqual(source.read_bytes(), source_raw)
         self.assertFalse(prompt.exists())
+
+    def test_upgrade_channel_only_install_preserves_backup_settings_and_restore(self):
+        source, raw = self.configure()
+        source_raw = source.read_bytes()
+        with (patch.multiple(app, VERSION="1.3.1", REPLY=CHANNEL_ONLY_REPLY,
+                             TRIGGER_BLOCK=CHANNEL_ONLY_TRIGGER_BLOCK),
+              patch.object(engine, "_stamp", return_value="2026-09-09T00:00:00+00:00")):
+            legacy = self.store.activate()
+        prompt = Path(legacy["prompt_path"])
+        self.assertEqual(legacy["version"], "1.3.1")
+        self.assertEqual(legacy["expected_reply"], CHANNEL_ONLY_REPLY)
+        self.assertIn(CHANNEL_ONLY_TRIGGER_BLOCK, prompt.read_bytes().decode("utf-8"))
+        self.assertEqual(self.store.backup_path.read_bytes(), raw)
+        backup_before = (self.store.backup_path.read_bytes(), self.store.backup_path.stat().st_mtime_ns)
+        state_before = self.store.read_state()
+
+        added_settings = b'model_reasoning_effort = "high"\r\n'
+        installed = self.store.config_path.read_bytes().replace(
+            b"[profiles.test]\r\n", added_settings + b"[profiles.test]\r\n")
+        self.store.config_path.write_bytes(installed)
+        expected_restored = raw.replace(b"[profiles.test]\r\n", added_settings + b"[profiles.test]\r\n")
+
+        with patch.object(engine, "_stamp", return_value="2026-09-10T00:00:00+00:00"):
+            upgraded = self.store.activate()
+        content = prompt.read_bytes().decode("utf-8")
+        self.assertEqual(upgraded["version"], "1.3.2")
+        self.assertFalse(upgraded["unchanged"])
+        self.assertEqual(upgraded["expected_reply"], EXPECTED_REPLY)
+        self.assertEqual(Path(upgraded["prompt_path"]), prompt)
+        self.assertTrue(content.startswith(source_raw.decode("utf-8")))
+        self.assertEqual(content.count(app.BEGIN), 1)
+        self.assertEqual(content.count(app.END), 1)
+        self.assertEqual(content.count(EXPECTED_REPLY), 1)
+        self.assertIn(app.TRIGGER_BLOCK, content)
+        self.assertNotIn(CHANNEL_ONLY_TRIGGER_BLOCK, content)
+        self.assertEqual(source.read_bytes(), source_raw)
+        self.assertEqual(self.store.config_path.read_bytes(), installed)
+        config = tomllib.loads(installed.decode("utf-8"))
+        self.assertEqual(config["model"], "keep-model")
+        self.assertEqual(config["model_reasoning_effort"], "high")
+        self.assertEqual(config["profiles"]["test"][engine.KEY], "不要改.md")
+        self.assertEqual((self.store.backup_path.read_bytes(), self.store.backup_path.stat().st_mtime_ns),
+                         backup_before)
+        state_after = self.store.read_state()
+        for key in ("previous_line", "installed_at", "config_existed", "had_line"):
+            self.assertEqual(state_after[key], state_before[key])
+
+        before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in self.home.rglob("*") if p.is_file()}
+        with patch.object(self.store, "install_content", wraps=self.store.install_content) as installer:
+            self.assertTrue(self.store.activate()["unchanged"])
+        installer.assert_not_called()
+        after = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in self.home.rglob("*") if p.is_file()}
+        self.assertEqual(before, after)
+        self.assertTrue(self.store.restore())
+        self.assertEqual(self.store.config_path.read_bytes(), expected_restored)
+        self.assertEqual(source.read_bytes(), source_raw)
+        self.assertFalse(prompt.exists())
+        self.assertFalse(self.store.state_path.exists())
+        self.assertFalse(self.store.backup_path.exists())
+        self.assertFalse(self.store.restore())
 
     def test_legacy_installation_state_is_untouched(self):
         self.configure()
@@ -254,6 +328,7 @@ class ActivationTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("预期回复：\n" + EXPECTED_REPLY + "\n", out.getvalue())
         self.assertEqual(out.getvalue().count("频道@XGYYDS789"), 1)
+        self.assertEqual(out.getvalue().count("QQ群1019953986"), 1)
         opener.assert_not_called()
 
     def test_default_cli_requests_codex_open(self):
@@ -298,8 +373,11 @@ class PromptAndPackagingTests(unittest.TestCase):
         self.assertIn("恰好为“小怪”", app.TRIGGER_BLOCK)
         self.assertIn("不添加标题", app.TRIGGER_BLOCK)
 
-    def test_trigger_block_contains_exact_two_line_reply_without_extra_spacing(self):
-        self.assertEqual(app.REPLY.splitlines(), [LEGACY_REPLY, "频道@XGYYDS789"])
+    def test_trigger_block_contains_exact_two_line_reply_with_four_ascii_spaces(self):
+        lines = app.REPLY.splitlines()
+        self.assertEqual(lines, [LEGACY_REPLY, "频道@XGYYDS789    QQ群1019953986"])
+        self.assertEqual(lines[1].removeprefix("频道@XGYYDS789").removesuffix("QQ群1019953986"), "\x20" * 4)
+        self.assertTrue(all(line == line.strip() for line in lines))
         self.assertEqual(app.REPLY.count("\n"), 1)
         self.assertNotIn("\r", app.REPLY)
         self.assertNotIn("&#x20;", app.TRIGGER_BLOCK)
@@ -308,21 +386,23 @@ class PromptAndPackagingTests(unittest.TestCase):
         reply = app.TRIGGER_BLOCK.split(heading, 1)[1].split("\n\n", 1)[0]
         self.assertEqual(reply, EXPECTED_REPLY)
         self.assertIn("两行之间仅使用一个换行，不添加空行或行首缩进。", app.TRIGGER_BLOCK)
+        self.assertIn("第二行的频道与 QQ 群之间保留 4 个半角空格。", app.TRIGGER_BLOCK)
         self.assertNotIn("只回复下面这一行", app.TRIGGER_BLOCK)
 
     def test_compose_upgrades_legacy_block_once_and_preserves_body(self):
-        for newline in ("\n", "\r\n"):
-            for trailing in ("", newline, newline * 2):
-                with self.subTest(newline=newline, trailing=trailing):
-                    body = f"# 用户原有正文{newline}{newline}保留中文、English 和原始换行。{newline}{newline}"
-                    legacy = LEGACY_TRIGGER_BLOCK.rstrip("\n").replace("\n", newline) + trailing
-                    upgraded = app.compose_prompt(body + legacy)
-                    self.assertEqual(upgraded, body + app.TRIGGER_BLOCK)
-                    self.assertEqual(upgraded.count(app.BEGIN), 1)
-                    self.assertEqual(upgraded.count(app.END), 1)
-                    self.assertEqual(upgraded.count(EXPECTED_REPLY), 1)
-                    self.assertNotIn("只回复下面这一行", upgraded)
-                    self.assertEqual(app.compose_prompt(upgraded), upgraded)
+        for version, block in (("1.3.0", LEGACY_TRIGGER_BLOCK), ("1.3.1", CHANNEL_ONLY_TRIGGER_BLOCK)):
+            for newline in ("\n", "\r\n"):
+                for trailing in ("", newline, newline * 2):
+                    with self.subTest(version=version, newline=newline, trailing=trailing):
+                        body = f"# 用户原有正文{newline}{newline}保留中文、English 和原始换行。{newline}{newline}"
+                        legacy = block.rstrip("\n").replace("\n", newline) + trailing
+                        upgraded = app.compose_prompt(body + legacy)
+                        self.assertEqual(upgraded, body + app.TRIGGER_BLOCK)
+                        self.assertEqual(upgraded.count(app.BEGIN), 1)
+                        self.assertEqual(upgraded.count(app.END), 1)
+                        self.assertEqual(upgraded.count(EXPECTED_REPLY), 1)
+                        self.assertNotIn("只回复下面这一行", upgraded)
+                        self.assertEqual(app.compose_prompt(upgraded), upgraded)
 
     def test_compose_is_idempotent(self):
         for base in ("", "original", "original\n", "original\r\n", "original\n\n"):
@@ -373,7 +453,7 @@ class ExecutableTests(unittest.TestCase):
         self.temp.cleanup()
 
     def run_exe(self, *args):
-        result = subprocess.run([str(self.exe), *args, "--json"], env=self.env, cwd=self.root,
+        result = subprocess.run([str(self.exe), *args, "--no-open", "--json"], env=self.env, cwd=self.root,
                                 capture_output=True, encoding="utf-8", timeout=45,
                                 creationflags=subprocess.CREATE_NO_WINDOW)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -387,12 +467,12 @@ class ExecutableTests(unittest.TestCase):
                               encoding="utf-8", timeout=45, creationflags=subprocess.CREATE_NO_WINDOW)
 
     def test_exe_standalone_install_status_restore(self):
-        first = self.run_exe("--install", "--no-open")
+        first = self.run_exe("--install")
         self.assertEqual(first["expected_reply"], EXPECTED_REPLY)
         content = Path(first["prompt_path"]).read_bytes().decode("utf-8")
         self.assertEqual(content.count(EXPECTED_REPLY), 1)
         self.assertIn(app.TRIGGER_BLOCK, content)
-        self.assertTrue(self.run_exe("--install", "--no-open")["unchanged"])
+        self.assertTrue(self.run_exe("--install")["unchanged"])
         self.assertIsNotNone(self.run_exe("--status")["profile"])
         self.assertTrue(self.run_exe("--restore")["restored"])
         self.assertFalse(self.run_exe("--restore")["restored"])
