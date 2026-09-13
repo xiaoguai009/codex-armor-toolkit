@@ -203,23 +203,55 @@ def _atomic_write(path: Path, data: bytes | None) -> None:
 def _transaction(updates: list[tuple[Path, bytes | None]], expected: dict[Path, bytes | None]) -> None:
     snapshots = {path: expected[path] if path in expected else _bytes(path) for path, _ in updates}
     written = dict(updates)
+    read_only_inputs = {path: raw for path, raw in expected.items() if path not in written}
     changed: list[Path] = []
+    write_attempted = False
     try:
+        for path, raw in expected.items():
+            if _bytes(path) != raw:
+                raise ConfigConflictError(f"文件在操作期间被更改，未覆盖新内容：{path}")
         for path, data in updates:
+            for source, raw in read_only_inputs.items():
+                if _bytes(source) != raw:
+                    raise ConfigConflictError(f"配置来源在操作期间被更改，未覆盖：{source}")
             if _bytes(path) != snapshots[path]:
                 raise ConfigConflictError(f"文件在操作期间被更改，未覆盖新内容：{path}")
+            write_attempted = True
             _atomic_write(path, data)
             changed.append(path)
+        for source, raw in read_only_inputs.items():
+            if _bytes(source) != raw:
+                raise ConfigConflictError(f"配置来源在操作期间被更改，未覆盖：{source}")
     except Exception as original:
+        if not write_attempted:
+            raise
         failures = []
+        # If another writer changed a committed (or partially committed) target,
+        # keep the transaction's dependencies together. In particular, retaining
+        # a new config while deleting its new prompt would leave a broken link.
+        for path in written:
+            expected_now = written[path] if path in changed else snapshots[path]
+            try:
+                if _bytes(path) != expected_now:
+                    failures.append(f"{path}: 出现其他修改，已保留本次相关文件")
+            except OSError as exc:
+                failures.append(f"{path}: 无法核对回滚条件，已保留本次相关文件：{exc}")
+        if failures:
+            raise ConfigError("操作失败；为保留并发修改及其依赖文件，未执行回滚：" + "; ".join(failures)) from original
+        restored: dict[Path, bytes | None] = {}
         for path in reversed(changed):
             try:
+                if any(_bytes(done) != raw for done, raw in restored.items()):
+                    failures.append("回滚期间已恢复的文件再次变化；已保留其余依赖文件")
+                    break
                 if _bytes(path) != written[path]:
-                    failures.append(f"{path}: 回滚前出现其他修改，已保留新内容")
-                    continue
+                    failures.append(f"{path}: 回滚前出现其他修改，已保留其余依赖文件")
+                    break
                 _atomic_write(path, snapshots[path])
+                restored[path] = snapshots[path]
             except (OSError, ConfigError) as exc:
                 failures.append(f"{path}: {exc}")
+                break
         if failures:
             raise ConfigError("操作失败，部分回滚未完成：" + "; ".join(failures)) from original
         raise
@@ -312,8 +344,20 @@ class ConfigStore:
                 return "已配置（未登记）"
         return None
 
+    def _new_recovery_directory(self) -> Path:
+        history = self.managed_dir / "history"
+        if _is_link(history) or (history.exists() and not history.is_dir()):
+            raise ConfigError(f"历史备份位置不是普通目录，未修改配置：{history}")
+        if history.resolve() != self.managed_dir.resolve() / "history":
+            raise ConfigError("历史备份目录超出本工具目录，未修改配置。")
+        target = history / ("reference-" + uuid.uuid4().hex)
+        if target.exists() or _is_link(target) or target.parent.resolve() != history.resolve():
+            raise ConfigConflictError("历史备份目录发生变化，未修改配置。")
+        return target
+
     def install_content(self, content: str, filename: str, title: str, key: str = "custom", *,
-                        expected_inputs: dict[Path, bytes | None] | None = None) -> dict:
+                        expected_inputs: dict[Path, bytes | None] | None = None,
+                        rebase_current: bool = False) -> dict:
         content = content.removeprefix("\ufeff")
         if not content.strip():
             raise ConfigError("配置内容不能为空。")
@@ -326,16 +370,50 @@ class ConfigStore:
             state_raw = _bytes(self.state_path)
             state = self.read_state()
             doc = ConfigDocument(_bytes(self.config_path))
+            updates: list[tuple[Path, bytes | None]] = []
+            expected = {self.config_path: doc.raw, self.state_path: state_raw}
+            archive_sources: dict[Path, bytes | None] = {}
             if state:
                 target = self._managed_prompt(state["prompt_path"])
                 if not self._matches(doc.data.get(KEY), target):
-                    raise ConfigConflictError("当前指令引用已被其他操作更改，未覆盖；原备份仍保留。")
-                target_raw = _bytes(target)
-                digest = state.get("owned_prompts", {}).get(str(target))
-                if target_raw is not None and digest != _sha(target_raw):
-                    # A switched profile must not erase manual edits to the old file.
+                    if not rebase_current:
+                        raise ConfigConflictError("当前指令引用已被其他操作更改，未覆盖；原备份仍保留。")
+                    recovery = self._new_recovery_directory()
+                    snapshots = [(recovery / "install-state.json", state_raw)]
+                    if doc.raw is not None:
+                        snapshots.append((recovery / "config-before-repair.toml", doc.raw))
+                    original_backup = _bytes(self.backup_path)
+                    archive_sources[self.backup_path] = original_backup
+                    if original_backup is not None:
+                        snapshots.append((recovery / "config-before-first-install.bak", original_backup))
+                    old_paths = {self._managed_prompt(value) for value in state.get("owned_prompts", {})}
+                    old_paths.add(target)
+                    for old_path in sorted(old_paths):
+                        old_raw = _bytes(old_path)
+                        archive_sources[old_path] = old_raw
+                        if old_raw is not None:
+                            snapshots.append((recovery / "prompts" / old_path.name, old_raw))
+                    updates.extend(snapshots)
+                    expected.update({path: None for path, _ in snapshots})
+                    # A new install cycle restores the CURRENT reference. Never
+                    # inherit ownership of files that may be its restore target.
+                    state = {
+                        "version": 2,
+                        "installed_at": _stamp(),
+                        "config_existed": doc.raw is not None,
+                        "had_line": doc.line is not None,
+                        "previous_line": doc.line,
+                        "recovery_path": str(recovery),
+                    }
                     target = self._unused_prompt_path()
                     target_raw = None
+                else:
+                    target_raw = _bytes(target)
+                    digest = state.get("owned_prompts", {}).get(str(target))
+                    if target_raw is not None and digest != _sha(target_raw):
+                        # A switched profile must not erase manual edits to the old file.
+                        target = self._unused_prompt_path()
+                        target_raw = None
             else:
                 if self.backup_path.exists():
                     raise ConfigConflictError("发现没有安装状态的旧备份，未覆盖该备份。")
@@ -356,15 +434,16 @@ class ConfigStore:
             raw_state = (json.dumps(state, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
             installed = doc.installed(target)
             ConfigDocument(installed)
-            updates = []
-            expected = {self.config_path: doc.raw, self.state_path: state_raw, target: target_raw}
+            expected[target] = target_raw
             if state_raw is None and doc.raw is not None:
                 updates.append((self.backup_path, doc.raw))
                 expected[self.backup_path] = None
             updates.extend([(target, raw_prompt), (self.state_path, raw_state), (self.config_path, installed)])
-            for path, expected_raw in (expected_inputs or {}).items():
+            for path, expected_raw in {**archive_sources, **(expected_inputs or {})}.items():
                 if _bytes(path) != expected_raw:
                     raise ConfigConflictError(f"配置来源在安装期间发生变化，未覆盖：{path}")
+            expected.update(archive_sources)
+            expected.update(expected_inputs or {})
             _transaction(updates, expected)
             return state
 

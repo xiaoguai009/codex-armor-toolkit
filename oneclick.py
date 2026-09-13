@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""小怪破甲 CMD 自动入口。保留当前指令，只追加精确口令；无 GUI 依赖。"""
+"""小怪破甲 CMD 自动入口。保留源文件，在副本中统一身份与精确口令。"""
 
 from __future__ import annotations
 
@@ -7,13 +7,18 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
 from config_engine import ConfigDocument, ConfigError, ConfigConflictError, ConfigStore, KEY, _bytes
 
 
-VERSION = "1.3.2"
+VERSION = "1.3.4"
+ASSISTANT_NAME = "小怪"
+# Read-only compatibility identifier: never emit the old name into a new prompt.
+LEGACY_ASSISTANT_NAME = "\u5bcc\u6c5f"
+GREETING_REPLY = "「你好」\n小怪在。👋"
 TRIGGER = "小怪"
 REPLY = "今宵不见儿童怪，应随斗柄西山外。\n频道@XGYYDS789    QQ群1019953986"
 BEGIN = "<!-- xiaoguai-oneclick:begin -->"
@@ -24,6 +29,17 @@ DEFAULT_PROMPT = """# 小怪破甲 · 开发增强
 遵循现有框架和约定，完成必要修改并运行相关检查，最后简洁报告实际结果。
 """
 TRIGGER_BLOCK = f"""{BEGIN}
+## 小怪身份与普通问候（精确匹配）
+
+助手的显示名称和自称统一为“小怪”。
+仅当用户最新一条消息去除首尾空白和末尾的“。！？.!?”后，恰好为
+“hi”“hello”“你好”“您好”或“在吗”（英文不区分大小写）时，按以下两行回复：
+{GREETING_REPLY}
+
+普通问候不添加其他文字，也不调用工具。
+消息包含其他任务正文时，不触发普通问候规则，照常完成用户任务，不得提前结束。
+仅输入“小怪”不属于普通问候，仍按下面的小怪确认口令回复。
+
 ## 小怪确认口令（精确匹配）
 
 当用户最新一条消息去除首尾空白后恰好为“小怪”时，只回复下面两行，逐字一致：
@@ -38,8 +54,57 @@ TRIGGER_BLOCK = f"""{BEGIN}
 """
 
 
+def migrate_assistant_name(base: str) -> str:
+    """Rebrand the generated copy; leave unrelated text and source files alone."""
+    if LEGACY_ASSISTANT_NAME not in base:
+        return base
+    # Retire only the known old exact-name trigger. Renaming that trigger would
+    # otherwise leave two incompatible replies for the same new name.
+    old_trigger = (
+        "When the user's entire message is exactly `"
+        + LEGACY_ASSISTANT_NAME
+        + "` (case-insensitive), reply with exactly the following text and nothing else:"
+    )
+    lines = base.splitlines(keepends=True)
+    outside_fence = [False] * len(lines)
+    fence: tuple[str, int] | None = None
+    for index, line in enumerate(lines):
+        bare = line.rstrip("\r\n")
+        if fence:
+            closing = r" {0,3}" + re.escape(fence[0]) + "{" + str(fence[1]) + r",}[ \t]*"
+            if re.fullmatch(closing, bare):
+                fence = None
+            continue
+        opening = re.match(r" {0,3}(`{3,}|~{3,})(.*)$", bare)
+        if opening and not (opening[1][0] == "`" and "`" in opening[2]):
+            fence = (opening[1][0], len(opening[1]))
+            continue
+        outside_fence[index] = True
+
+    kept = []
+    index = 0
+    while index < len(lines):
+        bare = lines[index].rstrip("\r\n")
+        if outside_fence[index] and re.fullmatch(r" {0,3}##[ \t]+Trigger[ \t]*", bare):
+            trigger_index = index + 1
+            while trigger_index < len(lines) and not lines[trigger_index].strip():
+                trigger_index += 1
+            if (trigger_index < len(lines) and outside_fence[trigger_index]
+                    and re.fullmatch(r" {0,3}" + re.escape(old_trigger) + r"[ \t]*",
+                                     lines[trigger_index].rstrip("\r\n"))):
+                index = trigger_index + 1
+                while index < len(lines):
+                    if outside_fence[index] and re.match(r" {0,3}#{1,2}[ \t]+", lines[index]):
+                        break
+                    index += 1
+                continue
+        kept.append(lines[index])
+        index += 1
+    return "".join(kept).replace(LEGACY_ASSISTANT_NAME, ASSISTANT_NAME)
+
+
 def compose_prompt(base: str) -> str:
-    """Preserve the original text byte-for-text, except our own trailing block."""
+    """Keep other text intact; migrate the old name and update our trailing block."""
     base = base.removeprefix("\ufeff")
     starts, ends = base.count(BEGIN), base.count(END)
     if starts or ends:
@@ -48,7 +113,8 @@ def compose_prompt(base: str) -> str:
         start, end = base.index(BEGIN), base.index(END) + len(END)
         if base[end:].strip():
             raise ConfigError("口令块后有其他手动内容；未移动或覆盖该内容。")
-        return base[:start] + TRIGGER_BLOCK
+        return migrate_assistant_name(base[:start]) + TRIGGER_BLOCK
+    base = migrate_assistant_name(base)
     separator = "" if not base or base.endswith("\n\n") else ("\n" if base.endswith("\n") else "\n\n")
     return base + separator + TRIGGER_BLOCK
 
@@ -62,6 +128,18 @@ class ActivationStore(ConfigStore):
         self.state_path = self.managed_dir / "install-state.json"
         self.backup_path = self.managed_dir / "config.toml.before-oneclick.bak"
 
+    def _resolve_reference(self, value: str) -> Path:
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = self.codex_home / path
+        return path.resolve()
+
+    def _matches(self, value: object, target: Path) -> bool:
+        try:
+            return isinstance(value, str) and bool(value.strip()) and self._resolve_reference(value) == target.resolve()
+        except (OSError, ValueError, RuntimeError):
+            return False
+
     def activate(self) -> dict:
         self._check_directories()
         raw_config = _bytes(self.config_path)
@@ -72,19 +150,19 @@ class ActivationStore(ConfigStore):
             if KEY in profiles[profile]:
                 raise ConfigError(f"当前 profile {profile!r} 单独配置了 {KEY}；未覆盖分区配置。")
 
+        state_raw = _bytes(self.state_path)
         state = self.read_state()
         reference = doc.data.get(KEY)
-        if state and not self._matches(reference, self._managed_prompt(state["prompt_path"])):
-            raise ConfigConflictError("当前引用在一键安装后被其他操作更改；原配置和备份已保留。")
+        reference_repaired = bool(state and not self._matches(reference, self._managed_prompt(state["prompt_path"])))
 
-        expected_inputs = {self.config_path: raw_config}
+        expected_inputs = {self.config_path: raw_config, self.state_path: state_raw}
         source_path = None
         source_raw = None
         if reference:
-            source_path = Path(reference).expanduser()
-            if not source_path.is_absolute():
-                source_path = self.codex_home / source_path
-            source_path = source_path.resolve()
+            source_path = self._resolve_reference(reference)
+            reserved = {self.config_path, self.state_path, self.backup_path, self.managed_dir / "install.lock"}
+            if source_path in {path.resolve() for path in reserved}:
+                raise ConfigError("当前指令引用指向本工具的配置、状态、备份或锁文件，未修改任何配置。")
             source_raw = _bytes(source_path)
             if source_raw is None:
                 raise ConfigError(f"当前指令文件不存在，未替换原引用：{source_path}")
@@ -100,7 +178,7 @@ class ActivationStore(ConfigStore):
 
         content = compose_prompt(base)
         unchanged = bool(
-            state and source_path and source_raw == content.encode("utf-8")
+            state and not reference_repaired and source_path and source_raw == content.encode("utf-8")
             and state.get("owned_prompts", {}).get(str(source_path)) == hashlib.sha256(source_raw).hexdigest()
         )
         if unchanged:
@@ -110,12 +188,14 @@ class ActivationStore(ConfigStore):
                     raise ConfigConflictError("检查期间配置发生变化，请重新执行。")
         else:
             state = self.install_content(content, "小怪确认口令.md", "小怪 · CMD 自动启用", "oneclick",
-                                         expected_inputs=expected_inputs)
+                                         expected_inputs=expected_inputs, rebase_current=True)
         return {
             "ok": True, "action": "install", "version": VERSION, "unchanged": unchanged,
             "codex_home": str(self.codex_home), "prompt_path": state["prompt_path"],
             "backup_path": str(self.backup_path) if self.backup_path.exists() else None,
             "trigger": TRIGGER, "expected_reply": REPLY,
+            "assistant_name": ASSISTANT_NAME, "expected_greeting": GREETING_REPLY,
+            "reference_repaired": reference_repaired, "recovery_path": state.get("recovery_path"),
             "config_installed": True, "model_reply_verified": False,
         }
 
@@ -166,7 +246,11 @@ def main(argv: list[str] | None = None) -> int:
         print("本地状态：" + (result["profile"] or "未安装"))
     else:
         print("小怪破甲 CMD 自动版 " + VERSION)
-        print("本地配置已就绪。" if result["unchanged"] else "本地配置已写入，原指令内容已保留。")
+        if result["reference_repaired"]:
+            print("已按当前配置修复旧安装记录；原记录、原提示词和首次备份已保留。")
+            print("本次修复历史备份：" + result["recovery_path"])
+        print("本地配置已就绪。" if result["unchanged"] else "本地配置已写入，原文件保留；生成副本已统一小怪身份。")
+        print("普通问候（hi / 你好）的预期回复：\n" + GREETING_REPLY)
         print("在 Codex 新任务中输入：" + TRIGGER)
         print("预期回复：\n" + REPLY)
         print("已运行的旧任务可能仍使用旧指令；此安装器不终止正在进行的任务。")
