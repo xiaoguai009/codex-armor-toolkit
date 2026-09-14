@@ -4,15 +4,28 @@
 
 **Codex 全破甲｜面向 GPT-6 Astra 的指令配置工具，适用于渗透测试、逆向分析与开发工作流。**
 
-**Windows · CMD 自动版 · v1.3.4**
+**Windows v1.3.4 · Mac 独立版 v1.3.4-mac.1**
 
 一键配置 · 引用修复 · 小怪身份 · 精确口令 · 内置恢复
 
-[下载 v1.3.4](downloads/xiaoguai-oneclick-v1.3.4.zip) · [快速开始](#quick-start) · [命令行参数](#options) · [交流与支持](#contact)
+**[下载 Windows v1.3.4](downloads/xiaoguai-oneclick-v1.3.4.zip) · [下载 Mac v1.3.4-mac.1](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip)**
+
+[Windows 快速开始](#windows-quick-start) · [Mac 快速开始](#mac-quick-start) · [命令行参数](#options) · [状态与验证](#verify) · [恢复配置](#undo) · [交流与支持](#contact)
 
 </div>
 
 ---
+
+## Download / 按系统选择
+
+| 系统 | 独立下载包 | 完整解压后运行 | 运行环境 |
+| --- | --- | --- | --- |
+| **Windows** | [v1.3.4 · Windows ZIP](downloads/xiaoguai-oneclick-v1.3.4.zip) | `启动小怪破甲.cmd` | EXE 内置运行时，无需另装 Python |
+| **Mac · Apple Silicon / Intel** | [v1.3.4-mac.1 · Mac ZIP](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip) | `启动小怪破甲.command` | 优先已有 Python 3.11+；缺少时首次下载独立运行时 |
+
+两个版本共用 v1.3.4 配置逻辑，**分别下载、分别解压**。Mac 包不含 Windows CMD / EXE，也不是 `.app`；不要只下载单个启动脚本。
+
+**Mac 版尚未经过 Mac 实机验证。** 当前验证为 Windows 上的共享引擎回归、平台模拟与 Bash 脚本测试，详见 [Mac 使用说明](macos/README.md) 和 [Mac 验证记录](macos/验证记录.txt)。
 
 ## What / 这是什么
 
@@ -26,17 +39,18 @@
 - **引用变化修复**：旧安装记录与当前有效引用不一致时，先保存历史快照，再按当前来源重建，不再直接报错退出。
 - **需要恢复**：还原本轮安装前的指令引用；发生引用修复时，恢复到修复前的当前引用，保留其他设置与历史快照。
 
-“Codex 全破甲”是项目名称，当前实现范围为本地指令配置、备份与恢复。安装器不修改 Codex 程序、模型权重、模型设置、推理档位、账号或 API 密钥，也不强制结束正在运行的 Codex。
+“Codex 全破甲”是项目名称，当前实现范围为本地指令配置、备份与恢复。**本工具不支持绕过云端审核，不改变服务端模型能力或限制。** 安装器不修改 Codex 程序、模型权重、模型设置、推理档位、账号或 API 密钥，也不强制结束正在运行的 Codex。
 
 当前测试覆盖本地配置流程，尚未进行 GPT-6 Astra 模型端兼容性测试。确认口令用于检查指令是否载入，不代表模型能力提升、限制绕过或“全破甲”效果已经验证。
 
-## Highlights / v1.3.4 版本特点
+## Highlights / 双平台版本特点
 
 | 项目 | 当前实现 |
 | --- | --- |
 | 工作流定位 | 面向 GPT-6 Astra 的渗透测试、逆向分析与开发指令配置；不切换模型 |
-| 启动方式 | 双击中文 CMD；不再弹出选档窗口 |
-| 运行环境 | Windows EXE 内置运行时，无需另装 Python 或下载运行依赖 |
+| 启动方式 | Windows 双击 `.cmd`；Mac 双击 `.command`；分别提供恢复入口 |
+| Windows 运行环境 | EXE 内置运行时，无需另装 Python 或下载运行依赖 |
+| Mac 运行环境 | 优先 Python 3.11+；必要时首次下载固定版本、经 SHA256 校验的独立运行时，不替换系统 Python |
 | 原文件保留 | 不覆盖外部原文件与首次备份；副本仅迁移旧身份名称、已知旧唤醒段及本工具管理块 |
 | 小怪问候 | 新任务仅输入 `hi` / `你好` 等纯问候，预期显示“「你好」”与“小怪在。👋” |
 | 两行确认 | 新任务输入“小怪”，预期回复诗句及包含频道、QQ 群的第二行 |
@@ -47,19 +61,24 @@
 | 路径一致性 | 相对引用按配置目录解析，同一目标不会误判为冲突 |
 | 并发保护 | 校验配置与来源快照；保留外部修改及依赖文件，检测当前 profile 的独立引用 |
 | 恢复方式 | 恢复本轮安装前引用；保留手动修改过的指令文件及修复历史 |
-| 自动化测试 | 隔离配置目录下 89 项测试通过，0 项跳过，覆盖引用修复、并发保护、身份迁移、源码、EXE 与 CMD 流程 |
+| Windows 回归 | 原 Windows / 共享引擎 89 项测试通过，覆盖引用修复、并发保护、身份迁移、源码、EXE 与 CMD 流程 |
+| 完整验证范围 | Windows 上共 225 项回归：223 项通过、2 项跳过；Mac 实机验收仍未完成，见 [Mac 验证记录](macos/验证记录.txt) |
 
 <a id="quick-start"></a>
 
 ## Quick Start / 快速开始
 
-### 1. 下载并完整解压
+<a id="windows-quick-start"></a>
+
+### Windows · v1.3.4
+
+#### 1. 下载并完整解压
 
 下载 [小怪破甲 v1.3.4 安装包](downloads/xiaoguai-oneclick-v1.3.4.zip)，将压缩包完整解压到一个文件夹。
 
 历史下载：[v1.3.2 安装包](downloads/xiaoguai-oneclick-v1.3.2.zip) · [v1.3.1 安装包](downloads/xiaoguai-oneclick-v1.3.1.zip)。
 
-### 2. 双击启动
+#### 2. 双击启动
 
 双击 **`启动小怪破甲.cmd`**。
 
@@ -77,7 +96,7 @@
 .\小怪破甲安装器.exe --install --no-open --json
 ```
 
-### 旧版出现“当前引用被其他操作更改”
+#### 旧版出现“当前引用被其他操作更改”
 
 完整解压并运行 **v1.3.4** 的启动 CMD，不要只替换 CMD 而继续使用旧 EXE，也不需要先删除安装状态或备份。
 
@@ -85,11 +104,11 @@
 
 修复后卸载会恢复到**修复前的当前引用**，不会恢复成过期记录中的旧引用。指令文件缺失、空白、非 UTF-8、配置损坏或当前 profile 有独立引用时，仍保留现场并给出具体错误。
 
-### 3. 在新任务中验证
+#### 3. 在新任务中验证
 
 在 Codex **新任务**中输入 `你好` 验证“小怪在。👋”；输入 `小怪` 则验证诗句与群号。两种回复见下方 [Verify / 验证](#verify)。
 
-### 从源码运行
+#### Windows 源码入口
 
 源码需要 **Python 3.11+**，运行只使用 Python 标准库。在仓库根目录执行：
 
@@ -105,11 +124,51 @@ python .\oneclick.py --install --codex-home ".\work\codex-test" --no-open --json
 
 该命令只处理指定的测试目录，不会自动让正常启动的 Codex 改用这个目录。
 
+<a id="mac-quick-start"></a>
+
+### Mac · v1.3.4-mac.1
+
+1. 下载 [Mac 独立安装包](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip)，**完整解压**。
+2. 双击 **`启动小怪破甲.command`**；保持 `macos/` 文件夹和其余文件完整，不混用 Windows CMD / EXE。
+3. 安装完成后会请求打开 Codex。在**新任务**输入 `你好` 或 `小怪`，检查指令载入。
+
+启动器优先使用本机 Python 3.11+。没有合格解释器时，会按 Apple Silicon / Intel 架构下载固定版本的独立 Python，**先校验 SHA256，再使用**；首次准备需要网络，之后复用本工具缓存。不自动运行 Homebrew，不使用 `sudo`，不替换系统 Python。
+
+终端安装示例（以 JSON 输出，不自动打开 Codex）：
+
+```bash
+/bin/bash "/你的解压路径/小怪破甲-Mac版/启动小怪破甲.command" --no-open --json
+```
+
+也可通过启动层调用，自动检查或准备运行环境：
+
+```bash
+/bin/bash "/你的解压路径/小怪破甲-Mac版/macos/launch.sh" --install --no-open --json
+```
+
+**尚未做 Mac 实机验证**：Finder 双击、原生 Python 加载和真实 Codex 打开仍待实际验收。完整操作、运行时缓存与系统要求见 [Mac 使用说明](macos/README.md)，实际测试结果见 [Mac 验证记录](macos/验证记录.txt)。
+
+#### Mac 源码入口
+
+已有 **Python 3.11+** 时，在仓库根目录运行 Mac 专用入口：
+
+```bash
+python3 -I ./macos/run.py --install --no-open --json
+```
+
+仅操作独立测试目录：
+
+```bash
+python3 -I ./macos/run.py --install --codex-home "./work/codex-test" --no-open --json
+```
+
+与 Windows 一样，`--codex-home` 只选择本次工具操作的目录，不会让正常打开的 Codex 自动改用该目录。
+
 <a id="options"></a>
 
 ## Options / 命令行参数
 
-以下参数适用于 `oneclick.py` 和 `小怪破甲安装器.exe`。
+以下参数适用于 Windows 的 `oneclick.py` / `小怪破甲安装器.exe`，以及 Mac 的 `macos/run.py` / `macos/launch.sh`。
 
 | 参数 | 作用 |
 | --- | --- |
@@ -121,19 +180,23 @@ python .\oneclick.py --install --codex-home ".\work\codex-test" --no-open --json
 | `--json` | 以 JSON 输出实际结果 |
 | `-h` / `--help` | 显示帮助 |
 
-`--install`、`--restore`、`--status` 三种操作互斥。启动 CMD 已带 `--install`，卸载 CMD 已带 `--restore`，不需要再追加其他操作参数。
+`--install`、`--restore`、`--status` 三种操作互斥。Windows 启动 / 卸载 CMD 已各自带操作参数；Mac 的安装 / 卸载 / 状态 `.command` 也已各自带操作参数，只需追加其他选项。
 
 配置目录按以下顺序选择：
 
 1. 命令行 `--codex-home`。
 2. 环境变量 `CODEX_HOME`。
-3. 默认的 `%USERPROFILE%\.codex`。
+3. Windows 默认 `%USERPROFILE%\.codex`；Mac 默认 `~/.codex`。
+
+Mac 可通过 `XIAOGUAI_PYTHON="/Python的绝对路径/python3"` 指定已有解释器；指定无效时直接报错。`--help` 不会仅为显示帮助下载运行时；`--json` 或 `XIAOGUAI_NO_PAUSE=1` 不会在结束时等待回车。
 
 <a id="verify"></a>
 
 ## Verify / 验证
 
 ### 本地配置状态
+
+#### Windows 状态
 
 ```powershell
 .\小怪破甲安装器.exe --status --json
@@ -143,6 +206,20 @@ python .\oneclick.py --install --codex-home ".\work\codex-test" --no-open --json
 
 ```powershell
 python .\oneclick.py --status --json
+```
+
+#### Mac 状态
+
+双击 **`查看小怪状态.command`**，或执行：
+
+```bash
+/bin/bash "/你的解压路径/小怪破甲-Mac版/macos/launch.sh" --status --json
+```
+
+已安装 Python 3.11+ 时，在仓库根目录使用源码入口：
+
+```bash
+python3 -I ./macos/run.py --status --json
 ```
 
 `--status` 检查本地安装记录与指令引用，不验证模型实际回复。安装命令的 JSON 结果中，`config_installed` 表示配置已写入，`model_reply_verified` 保持为 `false`。
@@ -181,13 +258,25 @@ python .\oneclick.py --status --json
 
 ### 源码测试
 
+Windows：
+
 ```powershell
 python -B -m unittest discover -s tests -v
 ```
 
-测试使用独立临时配置目录。Windows 且根目录存在已构建 EXE 时会运行 EXE 与 CMD 测试；不满足条件时，这部分测试会跳过。完整验证范围见 [验证记录.txt](验证记录.txt)。
+Mac / Python 3.11+：
+
+```bash
+python3 -B -m unittest discover -s tests -v
+```
+
+测试使用独立临时配置目录。Windows 且根目录存在已构建 EXE 时会运行 EXE 与 CMD 测试；不满足条件时，这部分测试会跳过。Windows 原版验证见 [验证记录.txt](验证记录.txt)；新增 Mac 测试的实际环境、结果及跳过项见 [Mac 验证记录](macos/验证记录.txt)。上述 Mac 命令是运行方式，不代表已完成 Mac 实测。
+
+<a id="undo"></a>
 
 ## Undo / 恢复安装前配置
+
+### Windows 恢复
 
 双击 **`卸载小怪破甲.cmd`**，或在工具目录执行：
 
@@ -201,6 +290,22 @@ python -B -m unittest discover -s tests -v
 python .\oneclick.py --restore --json
 ```
 
+### Mac 恢复
+
+双击 **`卸载小怪破甲.command`**，或执行：
+
+```bash
+/bin/bash "/你的解压路径/小怪破甲-Mac版/macos/launch.sh" --restore --json
+```
+
+已安装 Python 3.11+ 时，在仓库根目录使用源码入口：
+
+```bash
+python3 -I ./macos/run.py --restore --json
+```
+
+### 两个平台共同的恢复规则
+
 如果安装时指定了 `--codex-home`，查询状态和恢复时也应使用同一目录。
 
 恢复会还原本轮安装前的指令引用，而不是用旧备份覆盖整份当前配置。发生过引用修复时，以最近一次修复前的当前引用为恢复目标：
@@ -213,30 +318,50 @@ python .\oneclick.py --restore --json
 
 如果安装前已使用其他自定义身份，恢复后仍会加载那份原文件；“恢复安装前引用”不等于恢复 Codex 默认身份。
 
+Mac 恢复配置不会卸载用户已有 Python，也不会清理本工具的独立运行时缓存；缓存说明见 [Mac 使用说明](macos/README.md)。
+
 ## Layout / 项目结构
 
 ```text
 .
 ├── README.md                         # GitHub 项目首页
-├── README.txt                        # 安装与升级说明
-├── oneclick.py                       # v1.3.4 安装 / 状态 / 恢复入口
+├── README.txt                        # Windows 安装与升级说明
+├── oneclick.py                       # v1.3.4 Windows 入口与共享配置实现
 ├── config_engine.py                  # 配置读写、备份与恢复逻辑
-├── 启动小怪破甲.cmd                  # 一键安装入口
-├── 卸载小怪破甲.cmd                  # 一键恢复入口
+├── 启动小怪破甲.cmd                  # Windows 一键安装入口
+├── 卸载小怪破甲.cmd                  # Windows 一键恢复入口
 ├── 小怪破甲安装器.exe                # Windows 独立可执行文件
+├── 启动小怪破甲.command              # Mac 一键安装入口
+├── 卸载小怪破甲.command              # Mac 一键恢复入口
+├── 查看小怪状态.command              # Mac 状态查看入口
 ├── build-requirements.txt             # 固定版本的构建依赖
-├── 验证记录.txt                      # 构建与验证记录
+├── 验证记录.txt                      # Windows v1.3.4 构建与验证记录
 ├── 免责声明.txt                      # 原包附带文件
 ├── 直接点击启动小怪破甲.txt          # 原包附带提示文件
+├── macos/
+│   ├── README.md                     # Mac 使用说明
+│   ├── run.py                        # Mac 安装 / 状态 / 恢复入口
+│   ├── launch.sh                     # Python 发现与启动层
+│   ├── bootstrap-python.sh           # 独立运行时下载、校验与缓存
+│   ├── runtime-pins.sh               # 固定运行时版本与 SHA256
+│   ├── publish-runtime.py            # 运行时原子发布 helper
+│   ├── build_package.py              # Mac 独立 ZIP 打包与验证
+│   ├── RUNTIME.md                    # 运行时来源、缓存与系统要求
+│   └── 验证记录.txt                  # Mac 版实际验证范围与结果
 ├── tests/
 │   ├── test_config_engine.py
 │   ├── test_oneclick.py
-│   └── test_reference_repair.py       # 引用变化、历史快照与并发回归
+│   ├── test_reference_repair.py       # 引用变化、历史快照与并发回归
+│   ├── test_macos_entry.py
+│   ├── test_macos_shell.py
+│   ├── test_macos_bootstrap.py
+│   └── test_macos_package.py
 ├── assets/
 │   ├── support.jpg                   # 用户提供的赞赏码原图
 │   └── qq-group.jpg                  # 用户提供的 QQ 群原图
 ├── downloads/
-│   ├── xiaoguai-oneclick-v1.3.4.zip   # 当前版本安装包
+│   ├── xiaoguai-oneclick-v1.3.4.zip   # Windows 当前独立安装包
+│   ├── xiaoguai-oneclick-v1.3.4-mac.1.zip # Mac 当前独立安装包
 │   ├── xiaoguai-oneclick-v1.3.2.zip   # 历史版本安装包
 │   └── xiaoguai-oneclick-v1.3.1.zip   # 历史版本安装包
 ├── docs/
@@ -244,7 +369,7 @@ python .\oneclick.py --restore --json
 └── .gitignore
 ```
 
-配置副本与状态位于所选 Codex 配置目录下，默认目录为 `%USERPROFILE%\.codex`；指定 `--codex-home` 时以指定目录为准：
+配置副本与状态位于所选 Codex 配置目录下：Windows 默认 `%USERPROFILE%\.codex`，Mac 默认 `~/.codex`；指定 `--codex-home` 时以指定目录为准：
 
 ```text
 CODEX_HOME/
