@@ -1,0 +1,87 @@
+小怪破甲 Mac 独立版 1.3.4-mac.1
+共享配置引擎：1.3.4
+验证日期：2026-09-14
+
+一、发行范围
+
+本版是独立 Mac ZIP，提供安装、卸载和状态查看三个 .command 入口。
+不包含 Windows CMD/EXE，不是 .app 安装器。
+优先使用已有 Python 3.11+；没有合格解释器时，首次联网下载固定版本运行时。
+适配目标为 Apple Silicon 和 Intel；Codex 自身的系统要求另行判断。
+
+二、实际测试环境和结果
+
+测试系统：Windows 10，10.0.19045，x86_64。
+测试 Python：3.12.14，MSC v.1944，AMD64。
+脚本测试：Windows MSYS 下 GNU Bash 5.2.37。
+脚本源码按 macOS Bash 3.2 语法编写，未在 Bash 3.2 或 Mac 实机执行。
+
+完整回归共 225 项：223 项通过，2 项跳过，0 失败，0 错误。
+unittest 运行时间：68.471 秒。
+
+分类：
+- 原共享配置引擎、Windows 入口及引用修复：89 项通过。
+- Mac Python 入口：26 项通过。
+- Mac Shell 启动入口：35 项通过。
+- 独立运行时 bootstrap 和原子提交 helper：44 项通过。
+- Mac 打包器：29 项通过、2 项跳过。
+
+跳过的两项仅涉及打包器的原生符号链接创建；当前 Windows 返回 WinError 1314：
+- test_default_build_refuses_dangling_output_symlink
+- test_direct_source_symlink_is_rejected
+
+打包器的真实 Windows 目录联接越界用例、目标发布竞争用例均已执行通过。
+bootstrap 链接用例使用真实 Bash 可识别的 MSYS 链接，并通过 Bash -L 验证。
+
+三、验证内容
+
+- 安装、状态、恢复、精确问候/口令，以及原引用和备份保留。
+- CODEX_HOME 和 --codex-home 选择、中文/空格/美元符号路径、隔离模式。
+- 非 Mac 平台在写配置前拒绝；打开 Codex 成功、失败、超时均以模拟调用验证。
+- Python 发现顺序、版本检查、显式解释器失败、不污染 JSON stdout、退出码。
+- 下载 SHA256 校验先于解压及执行、架构/Rosetta/最低系统版本选择。
+- 已有缓存复用、损坏缓存保留、锁等待、失败清理和链接目录拒绝。
+- 运行时发布瞬间出现目录、文件、链接时保持已有目标不变。
+- Darwin renamex_np 的参数、RENAME_EXCL=4 和 errno 处理使用 mock 验证。
+- Mac ZIP 独立文件名、白名单、UTF-8/LF、Unix 0755、内容/CRC 及不覆盖发布。
+
+所有配置操作均在临时 HOME/CODEX_HOME 中测试，未打开真实 Codex。
+Shell 测试使用人工运行时和模拟外部命令；不是对 Mac 二进制的执行测试。
+Windows 下成功发布运行时以受控 fixture 模拟，真实 Darwin 系统调用未执行。
+
+四、上游运行时字节核验
+
+来源：astral-sh/python-build-standalone，发布 20260901，Python 3.12.14。
+
+Apple Silicon：
+cpython-3.12.14+20260901-aarch64-apple-darwin-install_only_stripped.tar.gz
+大小：24,981,445 bytes；成员：1662；链接：9。
+SHA256：81a359f1cfadd4da11766534c5913791cea55f26e1bb902cacd2a531bb1e4b2b
+Mach-O CPU：0x100000c；声明最低 macOS：11.0.0。
+
+Intel：
+cpython-3.12.14+20260901-x86_64-apple-darwin-install_only_stripped.tar.gz
+大小：24,686,153 bytes；成员：1659；链接：9。
+SHA256：65b195c9cedc1fef6767f044f9822069adbd1bd9204d424ece4628776fdc04bb
+Mach-O CPU：0x1000007；声明最低 macOS：10.15.0。
+
+两份压缩包均已实际下载、匹配官方 SHA256，并检查成员及链接限制在 python/ 下。
+仅检查字节和 Mach-O 元数据；未在 Windows 上执行这些 Mac 程序。
+运行时保留上游随附许可证；Mac ZIP 本身不捆绑这些下载文件。
+
+五、Windows 版本保持不变
+
+11 个原文件已与本轮修改前的 SHA256 基线逐一比较，全部一致。
+包括共享源码、原测试、两个 CMD、Windows EXE、原文档和 Windows ZIP。
+
+原 Windows EXE SHA256：
+07FA26318599ACF60C714DC0F6CF79AE2930EC42849621E8F61431E8869FC313
+
+原 Windows v1.3.4 ZIP SHA256：
+4266E2459F8AD819FB79ABD8DE812E4E814FDCD82836BAA70D99165DAC8DE111
+
+六、仍待 Mac 实机验证
+
+尚未在 Apple Silicon 或 Intel Mac 上完成实际安装/卸载验收。
+待验证项包括 Finder 双击入口、原生 Python 加载、Darwin 原子发布及真实 Codex 打开。
+本记录不将平台模拟、字节校验或代码复核表述为 Mac 实测通过。
