@@ -12,9 +12,11 @@ import sys
 from pathlib import Path
 
 from config_engine import ConfigDocument, ConfigError, ConfigConflictError, ConfigStore, KEY, _bytes
+from privacy_check import check_privacy, format_privacy_report
+from task_support import SUPPORT_BLOCK, ace_template_result, support_metadata
 
 
-VERSION = "1.3.4"
+VERSION = "1.4.0"
 ASSISTANT_NAME = "小怪"
 # Read-only compatibility identifier: never emit the old name into a new prompt.
 LEGACY_ASSISTANT_NAME = "\u5bcc\u6c5f"
@@ -50,6 +52,8 @@ TRIGGER_BLOCK = f"""{BEGIN}
 对此口令不添加标题、前缀、引号、Markdown、解释或任何其他文字，也不调用工具。
 这条精确匹配的输出格式优先于本文其他一般性的标题、开场白及回答结构要求。
 仅包含“小怪”但还有其他正文的请求不触发该口令，照常处理用户任务。
+
+{SUPPORT_BLOCK}
 {END}
 """
 
@@ -197,6 +201,7 @@ class ActivationStore(ConfigStore):
             "assistant_name": ASSISTANT_NAME, "expected_greeting": GREETING_REPLY,
             "reference_repaired": reference_repaired, "recovery_path": state.get("recovery_path"),
             "config_installed": True, "model_reply_verified": False,
+            "support_modules": support_metadata(),
         }
 
 
@@ -209,33 +214,45 @@ def main(argv: list[str] | None = None) -> int:
     actions.add_argument("--install", action="store_true", help="安装（默认操作）")
     actions.add_argument("--restore", action="store_true", help="恢复本次安装前的引用")
     actions.add_argument("--status", action="store_true", help="只读取本地安装状态")
+    actions.add_argument("--ace-template", action="store_true", help="只显示 ACE 待资料模板，不安装或执行绕过")
+    actions.add_argument("--privacy-check", action="store_true", help="只读检查提示词暴露提示，不输出正文或完整地址")
     parser.add_argument("--codex-home", type=Path)
     parser.add_argument("--no-open", action="store_true", help="安装后不打开 Codex")
     parser.add_argument("--json", action="store_true", help="以 JSON 输出实际结果")
     args = parser.parse_args(argv)
     try:
-        store = ActivationStore(args.codex_home)
-        if args.restore:
-            result = {"ok": True, "action": "restore", "restored": store.restore(),
-                      "retained_paths": store.retained_paths}
-        elif args.status:
-            result = {"ok": True, "action": "status", "profile": store.current_profile(),
-                      "codex_home": str(store.codex_home)}
+        if args.ace_template:
+            result = ace_template_result()
         else:
-            result = store.activate()
-            result["codex_open_requested"] = False
-            if not args.no_open and sys.platform.startswith("win"):
-                try:
-                    os.startfile("codex://")
-                    result["codex_open_requested"] = True
-                except OSError as exc:
-                    # An opening failure does not undo a successful configuration write.
-                    result["open_error"] = str(exc)
+            store = ActivationStore(args.codex_home)
+            if args.restore:
+                result = {"ok": True, "action": "restore", "restored": store.restore(),
+                          "retained_paths": store.retained_paths}
+            elif args.status:
+                result = {"ok": True, "action": "status", "profile": store.current_profile(),
+                          "codex_home": str(store.codex_home)}
+            elif args.privacy_check:
+                result = check_privacy(store.codex_home)
+            else:
+                result = store.activate()
+                result["codex_open_requested"] = False
+                if not args.no_open and sys.platform.startswith("win"):
+                    try:
+                        os.startfile("codex://")
+                        result["codex_open_requested"] = True
+                    except OSError as exc:
+                        # An opening failure does not undo a successful configuration write.
+                        result["open_error"] = str(exc)
     except (OSError, ValueError, RuntimeError) as exc:
-        result = {"ok": False, "error": str(exc)}
+        error = "暴露检查未完成；未输出异常详情或修改配置。" if args.privacy_check else str(exc)
+        result = {"ok": False, "error": error}
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False))
+    elif result.get("action") == "privacy-check":
+        print(format_privacy_report(result))
+    elif result.get("action") == "ace-template":
+        print(result["template"])
     elif not result["ok"]:
         print("执行未完成：" + result["error"], file=sys.stderr)
     elif result["action"] == "restore":
@@ -250,6 +267,7 @@ def main(argv: list[str] | None = None) -> int:
             print("已按当前配置修复旧安装记录；原记录、原提示词和首次备份已保留。")
             print("本次修复历史备份：" + result["recovery_path"])
         print("本地配置已就绪。" if result["unchanged"] else "本地配置已写入，原文件保留；生成副本已统一小怪身份。")
+        print("已加入 ACE 待资料提示词和减少误回显规则；未实现 ACE 绕过或防代理提取。")
         print("普通问候（hi / 你好）的预期回复：\n" + GREETING_REPLY)
         print("在 Codex 新任务中输入：" + TRIGGER)
         print("预期回复：\n" + REPLY)

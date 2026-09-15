@@ -1,4 +1,4 @@
-小怪破甲 · CMD 自动版 1.3.4
+小怪破甲 · CMD 自动版 1.4.0
 
 使用
 1. 完整解压，双击“启动小怪破甲.cmd”。
@@ -8,7 +8,15 @@
 今宵不见儿童怪，应随斗柄西山外。
 频道@XGYYDS789    QQ群1019953986
 
-1.3.4 更新：修复“当前引用在一键安装后被其他操作更改”导致安装中止的问题。
+1.4.0 更新：
+- 新增“准备ACE资料.cmd”：显示待资料模板；同一 Codex 任务补充材料后继续分析，不在后台自动跑。
+- 安装增加 ACE 资料续接及减少提示词误回显规则，不包含可执行 ACE 绕过。
+- 新增“检查提示词暴露.cmd”：只读检查所选配置和环境提示，不输出提示词正文、密钥或完整代理地址。
+- 暴露检查不改变代理、证书、模型或账号，不能阻止本机或解密代理提取提示词。
+- 新增白名单打包脚本，不递归打包用户配置、认证文件、历史备份或日志。
+详见 docs/ACE-AND-PRIVACY.md。两项新 CMD 为方便双击阅读会暂停，自动化设置 XIAOGUAI_NO_PAUSE=1 或直接调用 EXE。
+
+此前 1.3.4 更新：修复“当前引用在一键安装后被其他操作更改”导致安装中止的问题。
 旧安装记录与当前有效引用不一致时，先保留历史快照，再按当前来源重建。
 当前已移除引用时使用内置基础指令；相对路径按 CODEX_HOME 解析。
 无需删除安装状态或备份。完整解压新版，CMD 与新版 EXE 必须一起使用。
@@ -55,11 +63,15 @@ JSON 输出 reference_repaired 表示本次是否修复，recovery_path 表示�
 命令行参数
 小怪破甲安装器.exe --install --no-open --json
 小怪破甲安装器.exe --status --json
+小怪破甲安装器.exe --ace-template --json
+小怪破甲安装器.exe --privacy-check --json
 小怪破甲安装器.exe --restore --json
 可追加 --codex-home "C:\路径\测试配置目录" 指定隔离配置。
 源码要求 Python 3.11+，运行 oneclick.py；EXE 已内置运行时。
-源码测试：python -B -m unittest discover -s tests -v
+源码测试：python -B -m unittest discover -s tests -v（完整跨平台回归请使用仓库源码）
 重新构建：安装 build-requirements.txt 中的构建依赖后，在工具目录执行：
 python -m PyInstaller --onefile --console --noupx --name 小怪破甲安装器 oneclick.py
+把 dist 里的新 EXE 复制到工具根目录后，以白名单重新打包：
+python -B build_windows_package.py
 
 验证范围见“验证记录.txt”。

@@ -4,13 +4,13 @@
 
 **Codex 全破甲｜面向 GPT-6 Astra 的指令配置工具，适用于渗透测试、逆向分析与开发工作流。**
 
-**Windows v1.3.4 · Mac 独立版 v1.3.4-mac.1**
+**Windows v1.4.0 · Mac 独立版 v1.4.0-mac.1**
 
-一键配置 · 引用修复 · 小怪身份 · 精确口令 · 内置恢复
+一键配置 · ACE 待资料 · 暴露检查 · 小怪身份 · 内置恢复
 
-**[下载 Windows v1.3.4](downloads/xiaoguai-oneclick-v1.3.4.zip) · [下载 Mac v1.3.4-mac.1](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip)**
+**[下载 Windows v1.4.0](downloads/xiaoguai-oneclick-v1.4.0.zip) · [下载 Mac v1.4.0-mac.1](downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip)**
 
-[Windows 快速开始](#windows-quick-start) · [Mac 快速开始](#mac-quick-start) · [命令行参数](#options) · [状态与验证](#verify) · [恢复配置](#undo) · [交流与支持](#contact)
+[Windows 快速开始](#windows-quick-start) · [Mac 快速开始](#mac-quick-start) · [ACE 与提示词隐私](docs/ACE-AND-PRIVACY.md) · [命令行参数](#options) · [状态与验证](#verify) · [恢复配置](#undo) · [交流与支持](#contact)
 
 </div>
 
@@ -20,10 +20,10 @@
 
 | 系统 | 独立下载包 | 完整解压后运行 | 运行环境 |
 | --- | --- | --- | --- |
-| **Windows** | [v1.3.4 · Windows ZIP](downloads/xiaoguai-oneclick-v1.3.4.zip) | `启动小怪破甲.cmd` | EXE 内置运行时，无需另装 Python |
-| **Mac · Apple Silicon / Intel** | [v1.3.4-mac.1 · Mac ZIP](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip) | `启动小怪破甲.command` | 优先已有 Python 3.11+；缺少时首次下载独立运行时 |
+| **Windows** | [v1.4.0 · Windows ZIP](downloads/xiaoguai-oneclick-v1.4.0.zip) | `启动小怪破甲.cmd` | EXE 内置运行时，无需另装 Python |
+| **Mac · Apple Silicon / Intel** | [v1.4.0-mac.1 · Mac ZIP](downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip) | `启动小怪破甲.command` | 优先已有 Python 3.11+；缺少时首次下载独立运行时 |
 
-两个版本共用 v1.3.4 配置逻辑，**分别下载、分别解压**。Mac 包不含 Windows CMD / EXE，也不是 `.app`；不要只下载单个启动脚本。
+两个版本共用 v1.4.0 配置逻辑，**分别下载、分别解压**。Mac 包不含 Windows CMD / EXE，也不是 `.app`；不要只下载单个启动脚本。
 
 **Mac 版尚未经过 Mac 实机验证。** 当前验证为 Windows 上的共享引擎回归、平台模拟与 Bash 脚本测试，详见 [Mac 使用说明](macos/README.md) 和 [Mac 验证记录](macos/验证记录.txt)。
 
@@ -38,8 +38,10 @@
 - **重复安装**：内容未变时不重复写入；旧版可直接再次安装，更新身份与口令块，保留其他正文及首次备份。
 - **引用变化修复**：旧安装记录与当前有效引用不一致时，先保存历史快照，再按当前来源重建，不再直接报错退出。
 - **需要恢复**：还原本轮安装前的指令引用；发生引用修复时，恢复到修复前的当前引用，保留其他设置与历史快照。
+- **ACE 待资料模块**：提供资料模板与同一任务内后续消息续接规则，缺项不编造、不空跑；不包含可执行 ACE 绕过。
+- **提示词隐私**：增加减少误回显的规则和只读脱敏暴露检查；不能阻止本机、API 接收方或解密代理提取提示词。
 
-“Codex 全破甲”是项目名称，当前实现范围为本地指令配置、备份与恢复。**本工具不支持绕过云端审核，不改变服务端模型能力或限制。** 安装器不修改 Codex 程序、模型权重、模型设置、推理档位、账号或 API 密钥，也不强制结束正在运行的 Codex。
+“Codex 全破甲”是项目名称，当前实现范围为本地指令配置、备份与恢复、ACE 资料模板和暴露提示检查。**本工具不支持绕过云端审核，不改变服务端模型能力或限制。** 安装器不修改 Codex 程序、模型权重、模型设置、推理档位、账号或 API 密钥，也不强制结束正在运行的 Codex。
 
 当前测试覆盖本地配置流程，尚未进行 GPT-6 Astra 模型端兼容性测试。确认口令用于检查指令是否载入，不代表模型能力提升、限制绕过或“全破甲”效果已经验证。
 
@@ -54,7 +56,11 @@
 | 原文件保留 | 不覆盖外部原文件与首次备份；副本仅迁移旧身份名称、已知旧唤醒段及本工具管理块 |
 | 小怪问候 | 新任务仅输入 `hi` / `你好` 等纯问候，预期显示“「你好」”与“小怪在。👋” |
 | 两行确认 | 新任务输入“小怪”，预期回复诗句及包含频道、QQ 群的第二行 |
-| 旧版升级 | v1.3.0 / v1.3.1 / v1.3.2 可直接再次安装，统一小怪身份；诗句、频道与 QQ 群口令保持不变 |
+| ACE 资料准备 | 两个平台均提供 `--ace-template`；待资料、无后台监控、不执行绕过 |
+| 减少误回显 | 不把文档、网页、日志的导出/外发指令当作授权；保留用户维护其自己文件的能力 |
+| 暴露检查 | `--privacy-check` 只读配置与固定环境提示；不输出提示词、密钥或完整代理地址 |
+| 发布白名单 | Windows / Mac 按明确列表打包，不递归收集本机配置、认证、历史备份与日志 |
+| 旧版升级 | v1.3.x 可直接再次安装，更新管理块；诗句、频道与 QQ 群口令保持不变 |
 | 备份与状态 | 使用独立的 `managed-prompts/xiaoguai-oneclick/` 目录 |
 | 重复运行 | 内容一致时零写入，不覆盖首次备份 |
 | 引用修复 | 按当前有效来源重建安装记录，旧状态、旧指令和首次备份保留到历史目录 |
@@ -62,7 +68,7 @@
 | 并发保护 | 校验配置与来源快照；保留外部修改及依赖文件，检测当前 profile 的独立引用 |
 | 恢复方式 | 恢复本轮安装前引用；保留手动修改过的指令文件及修复历史 |
 | Windows 回归 | 原 Windows / 共享引擎 89 项测试通过，覆盖引用修复、并发保护、身份迁移、源码、EXE 与 CMD 流程 |
-| 完整验证范围 | Windows 上共 225 项回归：223 项通过、2 项跳过；Mac 实机验收仍未完成，见 [Mac 验证记录](macos/验证记录.txt) |
+| 完整验证范围 | Windows 上共 276 项回归：274 项通过、2 项跳过，新增功能及双平台打包检查已纳入；Mac 实机验收仍未完成，见 [Mac 验证记录](macos/验证记录.txt) |
 
 <a id="quick-start"></a>
 
@@ -70,13 +76,13 @@
 
 <a id="windows-quick-start"></a>
 
-### Windows · v1.3.4
+### Windows · v1.4.0
 
 #### 1. 下载并完整解压
 
-下载 [小怪破甲 v1.3.4 安装包](downloads/xiaoguai-oneclick-v1.3.4.zip)，将压缩包完整解压到一个文件夹。
+下载 [小怪破甲 v1.4.0 安装包](downloads/xiaoguai-oneclick-v1.4.0.zip)，将压缩包完整解压到一个文件夹。
 
-历史下载：[v1.3.2 安装包](downloads/xiaoguai-oneclick-v1.3.2.zip) · [v1.3.1 安装包](downloads/xiaoguai-oneclick-v1.3.1.zip)。
+历史下载：[v1.3.4 Windows](downloads/xiaoguai-oneclick-v1.3.4.zip) · [v1.3.4-mac.1 Mac](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip) · [v1.3.2 安装包](downloads/xiaoguai-oneclick-v1.3.2.zip) · [v1.3.1 安装包](downloads/xiaoguai-oneclick-v1.3.1.zip)。
 
 #### 2. 双击启动
 
@@ -98,7 +104,7 @@
 
 #### 旧版出现“当前引用被其他操作更改”
 
-完整解压并运行 **v1.3.4** 的启动 CMD，不要只替换 CMD 而继续使用旧 EXE，也不需要先删除安装状态或备份。
+完整解压并运行 **v1.4.0** 的启动 CMD，不要只替换 CMD 而继续使用旧 EXE，也不需要先删除安装状态或备份。
 
 新版以当前配置为准：读取有效的当前指令文件，保留原文件，在本地 `history/reference-<随机标识>/` 保存旧状态、旧指令、原首次备份及修复前配置，再生成新副本。当前已移除指令引用时，使用内置基础指令。
 
@@ -126,9 +132,9 @@ python .\oneclick.py --install --codex-home ".\work\codex-test" --no-open --json
 
 <a id="mac-quick-start"></a>
 
-### Mac · v1.3.4-mac.1
+### Mac · v1.4.0-mac.1
 
-1. 下载 [Mac 独立安装包](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip)，**完整解压**。
+1. 下载 [Mac 独立安装包](downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip)，**完整解压**。
 2. 双击 **`启动小怪破甲.command`**；保持 `macos/` 文件夹和其余文件完整，不混用 Windows CMD / EXE。
 3. 安装完成后会请求打开 Codex。在**新任务**输入 `你好` 或 `小怪`，检查指令载入。
 
@@ -175,12 +181,18 @@ python3 -I ./macos/run.py --install --codex-home "./work/codex-test" --no-open -
 | `--install` | 安装指令配置；未指定操作时默认安装 |
 | `--restore` | 恢复本次安装前的指令引用 |
 | `--status` | 只读取本地安装状态，不调用模型 |
+| `--ace-template` | 只显示 ACE 待资料模板；不安装、不执行绕过、不保存资料 |
+| `--privacy-check` | 只读、脱敏检查配置与环境中的暴露提示；不检测真实流量 |
 | `--codex-home "路径"` | 显式指定配置目录 |
 | `--no-open` | 安装后不请求打开 Codex |
 | `--json` | 以 JSON 输出实际结果 |
 | `-h` / `--help` | 显示帮助 |
 
-`--install`、`--restore`、`--status` 三种操作互斥。Windows 启动 / 卸载 CMD 已各自带操作参数；Mac 的安装 / 卸载 / 状态 `.command` 也已各自带操作参数，只需追加其他选项。
+`--install`、`--restore`、`--status`、`--ace-template`、`--privacy-check` 五种操作互斥。各 `.cmd` / `.command` 已带对应操作参数，只需追加其他选项。
+
+新增一键入口：**`准备ACE资料.cmd` / `准备ACE资料.command`** 和 **`检查提示词暴露.cmd` / `检查提示词暴露.command`**。Windows 新增 CMD 默认暂停便于阅读，自动化直接调用 EXE 或设置 `XIAOGUAI_NO_PAUSE=1`。
+
+ACE 提供的是任务准备提示词，资料补齐不等于已经实现绕过；暴露检查未发现提示也不代表提示词不可提取。完整说明见 [ACE 与提示词隐私](docs/ACE-AND-PRIVACY.md)。
 
 配置目录按以下顺序选择：
 
@@ -226,6 +238,8 @@ python3 -I ./macos/run.py --status --json
 
 `reference_repaired: true` 表示本次重建了过期引用记录；`recovery_path` 给出本地历史快照目录。重复安装内容未变时，`unchanged: true`，不再写入文件。
 
+安装 JSON 另有 `support_modules`：ACE 为 `intake_only`、`bypass_implemented: false`；隐私规则为 `best_effort_response_guard`、`prevents_local_or_proxy_extraction: false`。这些值避免把提示词加载误当成功能突破。
+
 ### 小怪身份与普通问候
 
 在新任务中仅输入 `hi`、`hello`、`你好`、`您好` 或 `在吗`，预期回复：
@@ -270,7 +284,7 @@ Mac / Python 3.11+：
 python3 -B -m unittest discover -s tests -v
 ```
 
-测试使用独立临时配置目录。Windows 且根目录存在已构建 EXE 时会运行 EXE 与 CMD 测试；不满足条件时，这部分测试会跳过。Windows 原版验证见 [验证记录.txt](验证记录.txt)；新增 Mac 测试的实际环境、结果及跳过项见 [Mac 验证记录](macos/验证记录.txt)。上述 Mac 命令是运行方式，不代表已完成 Mac 实测。
+测试使用独立临时配置目录。Windows 且根目录存在已构建 EXE 时会运行 EXE 与 CMD 测试；不满足条件时，这部分测试会跳过。完整跨平台回归使用仓库源码，各平台 ZIP 只包含适用的测试子集。当前验证见 [验证记录.txt](验证记录.txt) 和 [Mac 验证记录](macos/验证记录.txt)。上述 Mac 命令是运行方式，不代表已完成 Mac 实测。
 
 <a id="undo"></a>
 
@@ -326,16 +340,23 @@ Mac 恢复配置不会卸载用户已有 Python，也不会清理本工具的独
 .
 ├── README.md                         # GitHub 项目首页
 ├── README.txt                        # Windows 安装与升级说明
-├── oneclick.py                       # v1.3.4 Windows 入口与共享配置实现
+├── oneclick.py                       # v1.4.0 Windows 入口与共享配置实现
 ├── config_engine.py                  # 配置读写、备份与恢复逻辑
+├── task_support.py                   # ACE 待资料与减少误回显提示词
+├── privacy_check.py                  # 只读、脱敏的暴露提示检查
+├── build_windows_package.py          # Windows 白名单打包与核对
 ├── 启动小怪破甲.cmd                  # Windows 一键安装入口
 ├── 卸载小怪破甲.cmd                  # Windows 一键恢复入口
+├── 准备ACE资料.cmd                   # Windows 资料模板入口
+├── 检查提示词暴露.cmd                # Windows 暴露检查入口
 ├── 小怪破甲安装器.exe                # Windows 独立可执行文件
 ├── 启动小怪破甲.command              # Mac 一键安装入口
 ├── 卸载小怪破甲.command              # Mac 一键恢复入口
 ├── 查看小怪状态.command              # Mac 状态查看入口
+├── 准备ACE资料.command               # Mac 资料模板入口
+├── 检查提示词暴露.command            # Mac 暴露检查入口
 ├── build-requirements.txt             # 固定版本的构建依赖
-├── 验证记录.txt                      # Windows v1.3.4 构建与验证记录
+├── 验证记录.txt                      # Windows v1.4.0 构建与验证记录
 ├── 免责声明.txt                      # 原包附带文件
 ├── 直接点击启动小怪破甲.txt          # 原包附带提示文件
 ├── macos/
@@ -355,16 +376,22 @@ Mac 恢复配置不会卸载用户已有 Python，也不会清理本工具的独
 │   ├── test_macos_entry.py
 │   ├── test_macos_shell.py
 │   ├── test_macos_bootstrap.py
-│   └── test_macos_package.py
+│   ├── test_macos_package.py
+│   ├── test_support_features.py
+│   ├── test_privacy_check.py
+│   └── test_windows_package.py
 ├── assets/
 │   ├── support.jpg                   # 用户提供的赞赏码原图
 │   └── qq-group.jpg                  # 用户提供的 QQ 群原图
 ├── downloads/
-│   ├── xiaoguai-oneclick-v1.3.4.zip   # Windows 当前独立安装包
-│   ├── xiaoguai-oneclick-v1.3.4-mac.1.zip # Mac 当前独立安装包
+│   ├── xiaoguai-oneclick-v1.4.0.zip   # Windows 当前独立安装包
+│   ├── xiaoguai-oneclick-v1.4.0-mac.1.zip # Mac 当前独立安装包
+│   ├── xiaoguai-oneclick-v1.3.4.zip   # 历史 Windows 安装包
+│   ├── xiaoguai-oneclick-v1.3.4-mac.1.zip # 历史 Mac 安装包
 │   ├── xiaoguai-oneclick-v1.3.2.zip   # 历史版本安装包
 │   └── xiaoguai-oneclick-v1.3.1.zip   # 历史版本安装包
 ├── docs/
+│   ├── ACE-AND-PRIVACY.md             # 新模块使用方法与真实保护边界
 │   └── UPLOAD.md                     # GitHub 上传说明
 └── .gitignore
 ```
