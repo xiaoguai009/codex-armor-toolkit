@@ -31,8 +31,10 @@ fail() {
 
 basic_help() {
     printf '%s\n' \
-        '小怪破甲 macOS 版 1.3.4-mac.1' \
-        '用法：/bin/bash macos/launch.sh [--install | --restore | --status] [选项]' \
+        '小怪破甲 macOS 版 1.4.0-mac.1' \
+        '用法：/bin/bash macos/launch.sh [--install | --restore | --status | --ace-template | --privacy-check] [选项]' \
+        '  --ace-template     显示 ACE 待资料模板，不安装或执行绕过' \
+        '  --privacy-check    只读检查暴露提示，不输出提示词或完整地址' \
         '  --codex-home PATH  指定本次操作的 Codex 配置目录' \
         '  --no-open          安装后不打开 Codex' \
         '  --json             仅由 Python 入口输出 JSON，不暂停' \

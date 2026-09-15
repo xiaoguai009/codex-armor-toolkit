@@ -17,9 +17,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from oneclick import ASSISTANT_NAME, VERSION, ActivationStore
+from privacy_check import check_privacy, format_privacy_report
+from task_support import ace_template_result
 
 
-EDITION_VERSION = "1.3.4-mac.1"
+EDITION_VERSION = "1.4.0-mac.1"
 PLATFORM = "macos"
 OPEN_COMMAND = ["/usr/bin/open", "-a", "Codex"]
 OPEN_TIMEOUT = 15
@@ -37,6 +39,8 @@ def _parser() -> argparse.ArgumentParser:
     actions.add_argument("--install", action="store_true", help="安装（默认操作）")
     actions.add_argument("--restore", action="store_true", help="恢复本次安装前的引用")
     actions.add_argument("--status", action="store_true", help="只读取本地安装状态")
+    actions.add_argument("--ace-template", action="store_true", help="只显示 ACE 待资料模板，不安装或执行绕过")
+    actions.add_argument("--privacy-check", action="store_true", help="只读检查提示词暴露提示，不输出正文或完整地址")
     parser.add_argument("--codex-home", type=Path, help="指定配置目录；默认使用 CODEX_HOME 或 ~/.codex")
     parser.add_argument("--json", action="store_true", help="输出单个 JSON 结果")
     parser.add_argument("--no-open", action="store_true", help="安装后不打开 Codex")
@@ -63,6 +67,10 @@ def _request_open(result: dict) -> None:
 def _print_result(result: dict, json_output: bool) -> None:
     if json_output:
         print(json.dumps(result, ensure_ascii=False))
+    elif result.get("action") == "privacy-check" and "configuration_status" in result:
+        print(format_privacy_report(result))
+    elif result.get("action") == "ace-template" and result["ok"]:
+        print(result["template"])
     elif not result["ok"]:
         print("执行未完成：" + result["error"], file=sys.stderr)
     elif result["action"] == "restore":
@@ -78,6 +86,7 @@ def _print_result(result: dict, json_output: bool) -> None:
             print("已按当前引用修复旧安装记录；原记录、原提示词和首次备份已保留。")
             print("本次修复历史备份：" + result["recovery_path"])
         print("本地配置已就绪。" if result["unchanged"] else "本地配置已写入，原文件保留；生成副本已统一小怪身份。")
+        print("已加入 ACE 待资料提示词和减少误回显规则；未实现 ACE 绕过或防代理提取。")
         if result["backup_path"]:
             print("原配置备份：" + result["backup_path"])
         print("普通问候（hi / 你好）的预期回复：\n" + result["expected_greeting"])
@@ -108,22 +117,30 @@ def main(argv: list[str] | None = None) -> int:
     try:
         args = _parser().parse_args(argv)
         json_output = args.json
-        result["action"] = "restore" if args.restore else "status" if args.status else "install"
+        result["action"] = ("restore" if args.restore else "status" if args.status else
+                            "ace-template" if args.ace_template else "privacy-check" if args.privacy_check else "install")
         if sys.platform != "darwin":
             raise ValueError(f"此独立版仅支持 macOS（当前平台：{sys.platform}）；未修改配置。")
-        # The shared store owns CODEX_HOME, the default home and all backup rules.
-        store = ActivationStore(args.codex_home)
-        result["codex_home"] = str(store.codex_home)
-        if args.restore:
-            result.update(ok=True, restored=store.restore(), retained_paths=store.retained_paths)
-        elif args.status:
-            result.update(ok=True, profile=store.current_profile())
+        if args.ace_template:
+            result.update(ace_template_result())
         else:
-            result.update(store.activate())
-            if not args.no_open:
-                _request_open(result)
+            # The shared store owns CODEX_HOME, the default home and all backup rules.
+            store = ActivationStore(args.codex_home)
+            if args.privacy_check:
+                result.update(check_privacy(store.codex_home))
+            else:
+                result["codex_home"] = str(store.codex_home)
+                if args.restore:
+                    result.update(ok=True, restored=store.restore(), retained_paths=store.retained_paths)
+                elif args.status:
+                    result.update(ok=True, profile=store.current_profile())
+                else:
+                    result.update(store.activate())
+                    if not args.no_open:
+                        _request_open(result)
     except (OSError, ValueError, RuntimeError) as exc:
-        result.update(ok=False, error=str(exc))
+        error = "暴露检查未完成；未输出异常详情或修改配置。" if "--privacy-check" in argv else str(exc)
+        result.update(ok=False, error=error)
     _print_result(result, json_output)
     return 0 if result["ok"] else 2
 

@@ -1,8 +1,8 @@
 # 小怪破甲 · Mac 独立版
 
-**版本：1.3.4-mac.1｜配置引擎：1.3.4｜Apple Silicon / Intel**
+**版本：1.4.0-mac.1｜配置引擎：1.4.0｜Apple Silicon / Intel**
 
-单独的 macOS 下载包，不包含 Windows CMD 或 EXE。复用 Windows v1.3.4 的本地配置、引用修复、备份和恢复逻辑，不修改 Codex 程序或系统 Python。
+单独的 macOS 下载包，不包含 Windows CMD 或 EXE。复用 Windows v1.4.0 的本地配置、引用修复、备份和恢复逻辑，不修改 Codex 程序或系统 Python。
 
 ## 快速开始
 
@@ -18,13 +18,15 @@
 /bin/bash "/你的解压路径/小怪破甲-Mac版/启动小怪破甲.command"
 ```
 
-## 三个入口
+## 五个入口
 
 | 文件 | 操作 |
 | --- | --- |
 | `启动小怪破甲.command` | 安装或更新本地指令配置 |
 | `卸载小怪破甲.command` | 恢复本轮安装前的引用 |
 | `查看小怪状态.command` | 只读取本地安装状态 |
+| `准备ACE资料.command` | 显示待资料模板，不执行绕过 |
+| `检查提示词暴露.command` | 只读、脱敏配置与环境提示检查 |
 
 交互窗口完成后按回车结束；`--json` 或 `XIAOGUAI_NO_PAUSE=1` 不暂停。
 
@@ -62,9 +64,15 @@
 
 显式指定配置目录后，查询和恢复需使用同一目录。设置 `--codex-home` 不会让正常打开的 Codex 自动改用该目录。
 
-`--install`、`--restore`、`--status` 互斥；三个 .command 已各自带有操作参数，追加其他参数即可。
+`--install`、`--restore`、`--status`、`--ace-template`、`--privacy-check` 五种操作互斥；五个 .command 已各自带有操作参数，追加其他参数即可。
 
 可通过 `XIAOGUAI_PYTHON="/Python的绝对路径/python3"` 指定已有解释器。该路径无效时直接报错，不偷偷改用其他解释器。`--help` 不会仅为显示帮助下载依赖。引导失败时错误写入 stderr，退出码为 2；正常进入 Python 后，`--json` 返回单个 JSON 对象。
+
+## ACE 与提示词隐私
+
+安装后增加 ACE 待资料与后续消息续接规则，以及减少指令误回显的规则。模板不保存材料、不监控消息、没有可执行 ACE 绕过。
+
+暴露检查不读指令正文或认证文件，不输出完整代理地址或密钥，不改动配置、代理与证书。它不检测实际流量，也不能阻止使用者、API 接收方或解密代理读取提示词。详见包内 `docs/ACE-AND-PRIVACY.md`。Mac 启动器在缺少 Python 时仍可能先下载运行环境。
 
 ## 小怪身份与确认口令
 

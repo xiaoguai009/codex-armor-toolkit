@@ -15,16 +15,20 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EDITION_VERSION = "1.3.4-mac.1"
+EDITION_VERSION = "1.4.0-mac.1"
 PACKAGE_NAME = f"xiaoguai-oneclick-v{EDITION_VERSION}.zip"
 PREFIX = "小怪破甲-Mac版/"
 # Explicit allow-list: never package a user configuration, cache, runtime, or log.
 FILES = {
     "oneclick.py": "oneclick.py",
     "config_engine.py": "config_engine.py",
+    "task_support.py": "task_support.py",
+    "privacy_check.py": "privacy_check.py",
     "启动小怪破甲.command": "启动小怪破甲.command",
     "卸载小怪破甲.command": "卸载小怪破甲.command",
     "查看小怪状态.command": "查看小怪状态.command",
+    "准备ACE资料.command": "准备ACE资料.command",
+    "检查提示词暴露.command": "检查提示词暴露.command",
     "macos/run.py": "macos/run.py",
     "macos/launch.sh": "macos/launch.sh",
     "macos/bootstrap-python.sh": "macos/bootstrap-python.sh",
@@ -33,6 +37,9 @@ FILES = {
     "macos/README.md": "README.md",
     "macos/验证记录.txt": "验证记录.txt",
     "macos/RUNTIME.md": "macos/RUNTIME.md",
+    "docs/ACE-AND-PRIVACY.md": "docs/ACE-AND-PRIVACY.md",
+    "tests/test_support_features.py": "tests/test_support_features.py",
+    "tests/test_privacy_check.py": "tests/test_privacy_check.py",
     "tests/test_macos_entry.py": "tests/test_macos_entry.py",
     "tests/test_macos_shell.py": "tests/test_macos_shell.py",
     "tests/test_macos_bootstrap.py": "tests/test_macos_bootstrap.py",
@@ -147,6 +154,9 @@ def main(argv: list[str] | None = None) -> int:
             result = verify_archive(args.output, snapshot(ROOT))
         else:
             result = build(ROOT, args.output, force=args.force)
+    except SyntaxError:
+        print(json.dumps({"ok": False, "error": "Package Python syntax validation failed; no source text printed."}), file=sys.stderr)
+        return 2
     except (OSError, ValueError, zipfile.BadZipFile) as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
