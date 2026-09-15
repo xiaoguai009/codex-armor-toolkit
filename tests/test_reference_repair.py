@@ -106,7 +106,7 @@ class ReferenceRepairTests(unittest.TestCase):
     def assert_repair(self, result, baseline):
         self.assertTrue(result["reference_repaired"])
         self.assertFalse(result["unchanged"])
-        self.assertEqual(result["version"], "1.3.4")
+        self.assertEqual(result["version"], "1.4.0")
         self.assertIsInstance(result["recovery_path"], str)
         archive = Path(result["recovery_path"])
         self.assertTrue(archive.is_absolute())

@@ -81,6 +81,14 @@ class MacPackageTests(unittest.TestCase):
     def assert_no_temporary_archives(self):
         self.assertFalse(list(self.output.parent.glob(".xiaoguai-mac-*.zip")))
 
+    def test_cli_syntax_error_is_json_without_source_text(self):
+        stderr = io.StringIO()
+        with patch.object(app, "snapshot", side_effect=SyntaxError("PRIVATE_SOURCE_SENTINEL")), contextlib.redirect_stderr(stderr):
+            code = app.main(["--output", str(self.output)])
+        self.assertEqual(code, 2)
+        self.assertFalse(json.loads(stderr.getvalue())["ok"])
+        self.assertNotIn("PRIVATE_SOURCE_SENTINEL", stderr.getvalue())
+
     def test_allow_list_is_relative_unique_and_excludes_windows_artifacts(self):
         self.assertEqual(len(app.FILES.values()), len(set(app.FILES.values())))
         for source, destination in app.FILES.items():
@@ -180,13 +188,13 @@ class MacPackageTests(unittest.TestCase):
         self.assertFalse(self.output.exists())
 
     def test_package_name_and_prefix_are_separate_from_windows(self):
-        self.assertEqual(app.EDITION_VERSION, "1.3.4-mac.1")
-        self.assertEqual(app.PACKAGE_NAME, "xiaoguai-oneclick-v1.3.4-mac.1.zip")
+        self.assertEqual(app.EDITION_VERSION, "1.4.0-mac.1")
+        self.assertEqual(app.PACKAGE_NAME, "xiaoguai-oneclick-v1.4.0-mac.1.zip")
         self.assertEqual(app.PREFIX, "小怪破甲-Mac版/")
-        self.assertNotEqual(app.PACKAGE_NAME, "xiaoguai-oneclick-v1.3.4.zip")
+        self.assertNotEqual(app.PACKAGE_NAME, "xiaoguai-oneclick-v1.4.0.zip")
 
     def test_wrong_package_name_is_refused_even_with_force(self):
-        windows = self.root / "xiaoguai-oneclick-v1.3.4.zip"
+        windows = self.root / "xiaoguai-oneclick-v1.4.0.zip"
         windows.write_bytes(b"existing Windows package")
         for force in (False, True):
             with self.subTest(force=force):
@@ -212,7 +220,7 @@ class MacPackageTests(unittest.TestCase):
                     mode = info.external_attr >> 16
                     self.assertTrue(stat.S_ISREG(mode))
                     self.assertEqual(stat.S_IMODE(mode), 0o755 if name.endswith((".command", ".sh")) else 0o644)
-        self.assertEqual(result["edition_version"], "1.3.4-mac.1")
+        self.assertEqual(result["edition_version"], "1.4.0-mac.1")
         self.assertEqual(result["file_count"], len(self.originals))
         self.assertEqual(result["package"], str(self.output.resolve()))
         self.assertEqual(result["size"], self.output.stat().st_size)

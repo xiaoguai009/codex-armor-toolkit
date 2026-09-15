@@ -114,7 +114,7 @@ class ActivationTests(unittest.TestCase):
         result = self.store.activate()
         self.assertTrue(result["ok"])
         self.assertFalse(result["model_reply_verified"])
-        self.assertEqual(result["version"], "1.3.4")
+        self.assertEqual(result["version"], "1.4.0")
         self.assertEqual(result["expected_reply"], EXPECTED_REPLY)
         self.assertEqual(result["assistant_name"], EXPECTED_ASSISTANT_NAME)
         self.assertEqual(result["expected_greeting"], EXPECTED_GREETING_REPLY)
@@ -243,7 +243,7 @@ class ActivationTests(unittest.TestCase):
         with patch.object(engine, "_stamp", return_value="2026-09-10T00:00:00+00:00"):
             upgraded = self.store.activate()
         content = prompt.read_bytes().decode("utf-8")
-        self.assertEqual(upgraded["version"], "1.3.4")
+        self.assertEqual(upgraded["version"], "1.4.0")
         self.assertFalse(upgraded["unchanged"])
         self.assertEqual(upgraded["expected_reply"], EXPECTED_REPLY)
         self.assertEqual(Path(upgraded["prompt_path"]), prompt)
@@ -305,7 +305,7 @@ class ActivationTests(unittest.TestCase):
             upgraded = self.store.activate()
         expected_body = prefix.replace(LEGACY_ASSISTANT_NAME, EXPECTED_ASSISTANT_NAME) + suffix
         content = target.read_bytes().decode("utf-8")
-        self.assertEqual(upgraded["version"], "1.3.4")
+        self.assertEqual(upgraded["version"], "1.4.0")
         self.assertFalse(upgraded["unchanged"])
         self.assertEqual(Path(upgraded["prompt_path"]), target)
         self.assertEqual(content, expected_body + app.TRIGGER_BLOCK)
@@ -448,7 +448,7 @@ class ActivationTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         result = json.loads(out.getvalue())
         self.assertTrue(result["ok"])
-        self.assertEqual(result["version"], "1.3.4")
+        self.assertEqual(result["version"], "1.4.0")
         self.assertEqual(result["expected_reply"], EXPECTED_REPLY)
         self.assertEqual(result["assistant_name"], EXPECTED_ASSISTANT_NAME)
         self.assertEqual(result["expected_greeting"], EXPECTED_GREETING_REPLY)
@@ -505,7 +505,7 @@ class ActivationTests(unittest.TestCase):
 
 class PromptAndPackagingTests(unittest.TestCase):
     def test_current_identity_and_greeting_are_exact_and_legacy_name_is_not_published(self):
-        self.assertEqual(app.VERSION, "1.3.4")
+        self.assertEqual(app.VERSION, "1.4.0")
         self.assertEqual(app.ASSISTANT_NAME, EXPECTED_ASSISTANT_NAME)
         self.assertEqual(app.LEGACY_ASSISTANT_NAME, LEGACY_ASSISTANT_NAME)
         self.assertEqual(app.GREETING_REPLY, EXPECTED_GREETING_REPLY)
@@ -755,7 +755,7 @@ class ExecutableTests(unittest.TestCase):
 
     def test_exe_standalone_install_status_restore(self):
         first = self.run_exe("--install")
-        self.assertEqual(first["version"], "1.3.4")
+        self.assertEqual(first["version"], "1.4.0")
         self.assertEqual(first["expected_reply"], EXPECTED_REPLY)
         self.assertEqual(first["assistant_name"], EXPECTED_ASSISTANT_NAME)
         self.assertEqual(first["expected_greeting"], EXPECTED_GREETING_REPLY)
@@ -782,7 +782,7 @@ class ExecutableTests(unittest.TestCase):
         ).encode("utf-8")
         config_path.write_bytes(original_config)
         first = self.run_exe("--install")
-        self.assertEqual(first["version"], "1.3.4")
+        self.assertEqual(first["version"], "1.4.0")
         self.assertFalse(first["reference_repaired"])
         self.assertIsNone(first["recovery_path"])
         old_prompt = Path(first["prompt_path"])
@@ -870,7 +870,7 @@ class ExecutableTests(unittest.TestCase):
                 target = Path(first["prompt_path"])
                 content = target.read_bytes().decode("utf-8")
                 expected_body = prefix.replace(LEGACY_ASSISTANT_NAME, EXPECTED_ASSISTANT_NAME) + suffix
-                self.assertEqual(first["version"], "1.3.4")
+                self.assertEqual(first["version"], "1.4.0")
                 self.assertFalse(first["unchanged"])
                 self.assertEqual(first["assistant_name"], EXPECTED_ASSISTANT_NAME)
                 self.assertEqual(first["expected_greeting"], EXPECTED_GREETING_REPLY)

@@ -15,6 +15,8 @@ ENTRYPOINTS = {
     "启动小怪破甲.command": "--install",
     "卸载小怪破甲.command": "--restore",
     "查看小怪状态.command": "--status",
+    "准备ACE资料.command": "--ace-template",
+    "检查提示词暴露.command": "--privacy-check",
 }
 SHELL_FILES = tuple(ROOT / name for name in ENTRYPOINTS) + (ROOT / "macos" / "launch.sh",)
 MINIMUM_PYTHON_PROBE = "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"
@@ -400,7 +402,7 @@ exit "$FAKE_PYTHON_EXIT"
     def test_help_without_python_never_bootstraps(self):
         result = self.execute("--help")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("1.3.4-mac.1", result.stdout)
+        self.assertIn("1.4.0-mac.1", result.stdout)
         self.assertIn("--codex-home", result.stdout)
         self.assertEqual(result.stderr, "")
         self.assert_no_bootstrap()

@@ -79,8 +79,8 @@ class MacEntryTests(unittest.TestCase):
             self.assertIsInstance(result, dict)
             self.assertEqual(len(text.splitlines()), 1, "JSON output must be exactly one object, without progress text")
             self.assertEqual(result["platform"], "macos")
-            self.assertEqual(result["edition_version"], "1.3.4-mac.1")
-            self.assertEqual(result["version"], "1.3.4")
+            self.assertEqual(result["edition_version"], "1.4.0-mac.1")
+            self.assertEqual(result["version"], "1.4.0")
             return code, result, opened
         return code, text, errors, opened
 
@@ -378,7 +378,7 @@ class MacEntryTests(unittest.TestCase):
         code, output, errors, _ = self.call(no_open=False, json_output=False, open_error=OSError("fixture error"))
         self.assertEqual(code, 0)
         self.assertEqual(errors, "")
-        self.assertIn("macOS 独立版 1.3.4-mac.1", output)
+        self.assertIn("macOS 独立版 1.4.0-mac.1", output)
         self.assertIn(core.GREETING_REPLY, output)
         self.assertIn(core.REPLY, output)
         self.assertIn(str(self.backup_path), output)
@@ -413,7 +413,7 @@ class MacEntryTests(unittest.TestCase):
     def copied_entry(self):
         release = self.root / "独立 下载 Mac 版"
         (release / "macos").mkdir(parents=True)
-        for filename in ("oneclick.py", "config_engine.py"):
+        for filename in ("oneclick.py", "config_engine.py", "task_support.py", "privacy_check.py"):
             shutil.copy2(ROOT / filename, release / filename)
         target = release / "macos" / "run.py"
         shutil.copy2(ENTRY, target)
@@ -437,13 +437,13 @@ class MacEntryTests(unittest.TestCase):
 
     def test_copied_chinese_space_release_works_from_independent_cwd(self):
         release, entry = self.copied_entry()
-        for action in ("--install", "--status", "--restore"):
+        for action in ("--install", "--status", "--ace-template", "--privacy-check", "--restore"):
             with self.subTest(action=action):
                 code, result = self.run_copied_entry(entry, action, "darwin")
                 self.assertEqual(code, 0, result)
                 self.assertTrue(result["ok"])
                 self.assertEqual(result["action"], action[2:])
-                self.assertEqual(result["edition_version"], "1.3.4-mac.1")
+                self.assertEqual(result["edition_version"], "1.4.0-mac.1")
                 self.assertFalse(result["codex_open_requested"])
         self.assertFalse(self.config_path.exists())
         self.assertEqual(list(release.rglob("__pycache__")), [])
