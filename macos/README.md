@@ -2,7 +2,17 @@
 
 **版本：1.4.0-mac.1｜配置引擎：1.4.0｜Apple Silicon / Intel**
 
+**[下载当前 Mac 版 v1.4.0-mac.1（ZIP 直链）](https://github.com/xiaoguai009/codex-armor-toolkit/raw/refs/heads/main/downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip)**
+
 单独的 macOS 下载包，不包含 Windows CMD 或 EXE。复用 Windows v1.4.0 的本地配置、引用修复、备份和恢复逻辑，不修改 Codex 程序或系统 Python。
+
+## 从旧版升级
+
+使用 v1.3.4-mac.1 的用户请下载上方当前版，完整解压到新文件夹，再运行其中的 `启动小怪破甲.command`。不要只换启动脚本，也不要混入 Linux 的 `.sh` 或 Windows 的 CMD / EXE。
+
+更新 GitHub 链接或下载 ZIP 不会自动更新本机已安装的指令配置；需要实际运行新版入口。安装仍保留外部原文件和首次备份。旧任务是否加载新配置，应与新任务的实际表现分别核对。
+
+历史包 [v1.3.4-mac.1（旧版，仅供回溯）](https://github.com/xiaoguai009/codex-armor-toolkit/blob/main/downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip) 继续保留，不作为当前下载入口。
 
 ## 快速开始
 
@@ -93,6 +103,8 @@
 第二行频道与 QQ 群之间是 4 个 ASCII 空格；带有任务正文时不触发短回复。口令检查的是指令载入，不是模型能力测试。
 
 ## 验证范围
+
+任务执行到一半停止或回复拒绝时，先看 [任务中断与拒绝排查](https://github.com/xiaoguai009/codex-armor-toolkit/blob/main/docs/TROUBLESHOOTING.md)。安装成功、口令回复正常和模型完成具体任务是三项不同的验证，不能相互替代。
 
 本版在 Windows 上完成共享引擎回归、Python 平台模拟与真实 Bash 下的隔离脚本测试；下载的两种官方 Python 运行时仅校验字节、压缩包布局及 Mach-O 架构，不在 Windows 上执行。
 
