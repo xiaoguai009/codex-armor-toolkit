@@ -8,9 +8,9 @@
 
 一键配置 · ACE 待资料 · 暴露检查 · 小怪身份 · 内置恢复
 
-**[下载 Windows v1.4.0](downloads/xiaoguai-oneclick-v1.4.0.zip) · [下载 Mac v1.4.0-mac.1](downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip)**
+**[下载 Windows v1.4.0](downloads/xiaoguai-oneclick-v1.4.0.zip) · [下载 Mac v1.4.0-mac.1（ZIP 直链）](https://github.com/xiaoguai009/codex-armor-toolkit/raw/refs/heads/main/downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip)**
 
-[Windows 快速开始](#windows-quick-start) · [Mac 快速开始](#mac-quick-start) · [ACE 与提示词隐私](docs/ACE-AND-PRIVACY.md) · [命令行参数](#options) · [状态与验证](#verify) · [恢复配置](#undo) · [交流与支持](#contact)
+[Windows 快速开始](#windows-quick-start) · [Mac 快速开始](#mac-quick-start) · [ACE 与提示词隐私](docs/ACE-AND-PRIVACY.md) · [任务中断与拒绝排查](docs/TROUBLESHOOTING.md) · [命令行参数](#options) · [状态与验证](#verify) · [恢复配置](#undo) · [交流与支持](#contact)
 
 </div>
 
@@ -21,7 +21,11 @@
 | 系统 | 独立下载包 | 完整解压后运行 | 运行环境 |
 | --- | --- | --- | --- |
 | **Windows** | [v1.4.0 · Windows ZIP](downloads/xiaoguai-oneclick-v1.4.0.zip) | `启动小怪破甲.cmd` | EXE 内置运行时，无需另装 Python |
-| **Mac · Apple Silicon / Intel** | [v1.4.0-mac.1 · Mac ZIP](downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip) | `启动小怪破甲.command` | 优先已有 Python 3.11+；缺少时首次下载独立运行时 |
+| **Mac · Apple Silicon / Intel** | [v1.4.0-mac.1 · Mac ZIP 直链](https://github.com/xiaoguai009/codex-armor-toolkit/raw/refs/heads/main/downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip) | `启动小怪破甲.command` | 优先已有 Python 3.11+；缺少时首次下载独立运行时 |
+
+**Mac 旧版升级入口：** 使用 v1.3.4-mac.1 的用户请下载上方 **v1.4.0-mac.1**，完整解压到新文件夹，再运行其中的 `启动小怪破甲.command`；不要混用旧目录里的脚本。GitHub 下载更新不会自动更新本机已安装的配置。
+
+**Mac 历史存档：** [v1.3.4-mac.1（旧版，仅供回溯）](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip)。旧包保留，不覆盖成新版；当前 Mac 下载统一使用上方新版直链。文件名含 `-linux.` 的包属于 Linux，不能替代 Mac 包。
 
 两个版本共用 v1.4.0 配置逻辑，**分别下载、分别解压**。Mac 包不含 Windows CMD / EXE，也不是 `.app`；不要只下载单个启动脚本。
 
@@ -82,7 +86,7 @@
 
 下载 [小怪破甲 v1.4.0 安装包](downloads/xiaoguai-oneclick-v1.4.0.zip)，将压缩包完整解压到一个文件夹。
 
-历史下载：[v1.3.4 Windows](downloads/xiaoguai-oneclick-v1.3.4.zip) · [v1.3.4-mac.1 Mac](downloads/xiaoguai-oneclick-v1.3.4-mac.1.zip) · [v1.3.2 安装包](downloads/xiaoguai-oneclick-v1.3.2.zip) · [v1.3.1 安装包](downloads/xiaoguai-oneclick-v1.3.1.zip)。
+Windows 历史下载：[v1.3.4 Windows](downloads/xiaoguai-oneclick-v1.3.4.zip) · [v1.3.2 安装包](downloads/xiaoguai-oneclick-v1.3.2.zip) · [v1.3.1 安装包](downloads/xiaoguai-oneclick-v1.3.1.zip)。Mac 新版与旧版存档见上方下载区。
 
 #### 2. 双击启动
 
@@ -134,7 +138,7 @@ python .\oneclick.py --install --codex-home ".\work\codex-test" --no-open --json
 
 ### Mac · v1.4.0-mac.1
 
-1. 下载 [Mac 独立安装包](downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip)，**完整解压**。
+1. 下载 [Mac v1.4.0-mac.1 独立安装包（ZIP 直链）](https://github.com/xiaoguai009/codex-armor-toolkit/raw/refs/heads/main/downloads/xiaoguai-oneclick-v1.4.0-mac.1.zip)，**完整解压**。
 2. 双击 **`启动小怪破甲.command`**；保持 `macos/` 文件夹和其余文件完整，不混用 Windows CMD / EXE。
 3. 安装完成后会请求打开 Codex。在**新任务**输入 `你好` 或 `小怪`，检查指令载入。
 
@@ -392,6 +396,7 @@ Mac 恢复配置不会卸载用户已有 Python，也不会清理本工具的独
 │   └── xiaoguai-oneclick-v1.3.1.zip   # 历史版本安装包
 ├── docs/
 │   ├── ACE-AND-PRIVACY.md             # 新模块使用方法与真实保护边界
+│   ├── TROUBLESHOOTING.md             # 任务中断、拒绝与配置载入排查
 │   └── UPLOAD.md                     # GitHub 上传说明
 └── .gitignore
 ```
